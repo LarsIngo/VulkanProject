@@ -1,7 +1,7 @@
 #include <crtdbg.h>
 
 #include "VkRenderer.hpp"
-#include "Timer.hpp"
+#include "CPUTimer.hpp"
 
 int main()
 {
@@ -15,7 +15,7 @@ int main()
     float dt = 0.f;
     while (renderer.Running())
     {
-        TIMER(dt);
+        CPUTIMER(dt);
         // +++ UPDATE +++ //
         // --- UPDATE --- //
 

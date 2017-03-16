@@ -1,24 +1,24 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="VulkanResources">
-      <UniqueIdentifier>{1db200d6-0399-49a5-b1b3-d89eb5858cfb}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Tools">
       <UniqueIdentifier>{84aa59bd-fd7b-4bcc-99b8-cf69531a8f35}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Vulkan">
+      <UniqueIdentifier>{1db200d6-0399-49a5-b1b3-d89eb5858cfb}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="VkRenderer.cpp">
-      <Filter>VulkanResources</Filter>
+      <Filter>Vulkan</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="VkRenderer.hpp">
-      <Filter>VulkanResources</Filter>
+      <Filter>Vulkan</Filter>
     </ClInclude>
-    <ClInclude Include="Timer.hpp">
+    <ClInclude Include="CPUTimer.hpp">
       <Filter>Tools</Filter>
     </ClInclude>
   </ItemGroup>

@@ -2,18 +2,18 @@
 
 #include <chrono>
 
-// Profiler.
-class Timer {
+// CPU timer.
+class CPUTimer {
     public:
         // Constructor.
-        Timer(float& dt)
+        CPUTimer(float& dt)
         {
             mStart = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
             mDt = &dt;
         }
 
         // Destructor.
-        ~Timer()
+        ~CPUTimer()
         {
             long long deltaTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count() - mStart;
             *mDt = static_cast<float>(deltaTime) / 1000.f;
@@ -25,4 +25,4 @@ class Timer {
 
 };
 
-#define TIMER(dt) Timer instance(dt)
+#define CPUTIMER(dt) CPUTimer instance(dt)
