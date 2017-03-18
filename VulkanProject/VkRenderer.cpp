@@ -4,7 +4,7 @@
 #include <assert.h>
 #include <iostream>
 #include <sstream>
-#include <Windows.h>
+#include <map>
 
 VkRenderer::VkRenderer(unsigned int winWidth, unsigned int winHeight)
 {
@@ -278,9 +278,15 @@ void VkRenderer::InitialiseDevice()
 
     std::vector<const char*> enabledExtensionList = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
-    mGraphicsFamilyIndex = vkTools::FindGraphicsFamilyIndex(mPhysicalDevice);
-    mComputeFamilyIndex = vkTools::FindComputeFamilyIndex(mPhysicalDevice);
-    assert(mGraphicsFamilyIndex == mComputeFamilyIndex);
+    mGraphicsFamilyIndex = vkTools::FindFamilyIndex(mPhysicalDevice, VK_QUEUE_GRAPHICS_BIT);
+    mComputeFamilyIndex = vkTools::FindFamilyIndex(mPhysicalDevice, VK_QUEUE_COMPUTE_BIT);
+    mTransferFamilyIndex = vkTools::FindFamilyIndex(mPhysicalDevice, VK_QUEUE_TRANSFER_BIT);
+
+    std::map<uint32_t, uint32_t> familyIndexMap;
+    familyIndexMap[mGraphicsFamilyIndex] = mGraphicsFamilyIndex;
+    familyIndexMap[mComputeFamilyIndex] = mComputeFamilyIndex;
+    familyIndexMap[mTransferFamilyIndex] = mTransferFamilyIndex;
+    assert(familyIndexMap.size() == 1);
 
     float queuePriorities{ 1.f };
     VkDeviceQueueCreateInfo deviceQueueCreateInfo;
@@ -317,6 +323,7 @@ void VkRenderer::InitialiseQueues()
 
     vkGetDeviceQueue(mDevice, mGraphicsFamilyIndex, 0, &mGraphicsQueue);
     vkGetDeviceQueue(mDevice, mComputeFamilyIndex, 0, &mComputeQueue);
+    vkGetDeviceQueue(mDevice, mTransferFamilyIndex, 0, &mTransferQueue);
     vkGetDeviceQueue(mDevice, mPresentFamilyIndex, 0, &mPresentQueue);
 }
 
@@ -407,12 +414,16 @@ void VkRenderer::InitialiseCommandPool()
 
     commandPoolCreateInfo.queueFamilyIndex = mComputeFamilyIndex;
     vkTools::VkErrorCheck(vkCreateCommandPool(mDevice, &commandPoolCreateInfo, nullptr, &mComputeCommandPool));
+
+    commandPoolCreateInfo.queueFamilyIndex = mTransferFamilyIndex;
+    vkTools::VkErrorCheck(vkCreateCommandPool(mDevice, &commandPoolCreateInfo, nullptr, &mTransferCommandPool));
 }
 
 void VkRenderer::DeInitialiseCommandPool()
 {
     vkDestroyCommandPool(mDevice, mGraphicsCommandPool, nullptr);
     vkDestroyCommandPool(mDevice, mComputeCommandPool, nullptr);
+    vkDestroyCommandPool(mDevice, mTransferCommandPool, nullptr);
 }
 
 void VkRenderer::InitialiseSemaphores()

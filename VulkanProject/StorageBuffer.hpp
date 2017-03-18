@@ -16,7 +16,8 @@ class StorageBuffer
         ~StorageBuffer();
 
         // Copy other storage buffer.
-        void Copy(StorageBuffer* storageBuffer);
+        // commandBuffer Command buffer to make copy.
+        void Copy(VkCommandBuffer commandBuffer, StorageBuffer* storageBuffer);
 
         // Get size of storage buffer.
         // Returns size in bytes.
@@ -27,10 +28,11 @@ class StorageBuffer
         unsigned int GetStride();
         
         // Write to storage buffer.
+        // commandBuffer Command buffer to make write.
         // data Data to write.
-        // size Size of data in bytes.
+        // byteSize Size of data in bytes.
         // off Offset to write data in bytes.
-        void Write(void* data, unsigned int size, unsigned int offset);
+        void Write(VkCommandBuffer commandBuffer, void* data, unsigned int byteSize, unsigned int offset);
 
         // Storage buffer.
         VkBuffer mBuffer;

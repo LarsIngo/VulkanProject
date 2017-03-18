@@ -29,6 +29,8 @@ int main()
     VkCommandBuffer computeCommandBuffer;
     vkTools::CreateCommandBuffer(device, computeCommandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, computeCommandBuffer);
 
+    VkCommandBuffer transferCommandBuffer = vkTools::BeginSingleTimeCommand(device, renderer.mTransferCommandPool);
+
     ParticleSystem particleSystem(device, physicalDevice);
 
     InputManager inputManager(renderer.mGLFWwindow);
@@ -56,8 +58,9 @@ int main()
                 particleList.push_back(particle);
             }
         }
-        scene.AddParticles(particleList);
+        scene.AddParticles(transferCommandBuffer, particleList);
     }
+    vkTools::EndSingleTimeCommand(device, renderer.mTransferCommandPool, renderer.mTransferQueue, transferCommandBuffer);
     // --- INIT --- //
 
     // +++ MAIN LOOP +++ //
@@ -71,6 +74,9 @@ int main()
         // +++ UPDATE +++ //
         vkTools::BeginCommandBuffer(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, computeCommandBuffer);
 
+        camera.Update(20.f, 2.f, dt, &inputManager);
+        particleSystem.Update(computeCommandBuffer, &scene, dt);
+
         vkTools::EndCommandBuffer(computeCommandBuffer);
         vkTools::SubmitCommandBuffer(computeQueue, computeCommandBuffer);
         vkTools::WaitQueue(computeQueue);
@@ -83,9 +89,12 @@ int main()
         FrameBuffer* backBuffer = renderer.SwapBackBuffer();
         backBuffer->TransitionImageLayout(graphicsCommandBuffer, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-        camera.mpFrameBuffer->Clear(graphicsCommandBuffer, 1.f, 0.f, 0.f, 1.f);
-        backBuffer->Copy(graphicsCommandBuffer, camera.mpFrameBuffer);
 
+        camera.mpFrameBuffer->Clear(graphicsCommandBuffer, 0.2f, 0.2f, 0.2f);
+        particleSystem.Render(graphicsCommandBuffer, &scene, &camera);
+
+
+        backBuffer->Copy(graphicsCommandBuffer, camera.mpFrameBuffer);
         backBuffer->TransitionImageLayout(graphicsCommandBuffer, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
         vkTools::EndCommandBuffer(graphicsCommandBuffer);
         vkTools::SubmitCommandBuffer(graphicsQueue, graphicsCommandBuffer);
@@ -101,6 +110,7 @@ int main()
 
     // +++ SHUTDOWN +++ //
     vkTools::FreeCommandBuffer(device, graphicsCommandPool, graphicsCommandBuffer);
+    vkTools::FreeCommandBuffer(device, computeCommandPool, computeCommandBuffer);
     // --- SHUTDOWN --- //
 
     return 0;

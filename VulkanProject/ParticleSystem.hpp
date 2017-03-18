@@ -20,14 +20,16 @@ class ParticleSystem
         ~ParticleSystem();
 
         // Update particles.
+        // commandBuffer Command buffer to update.
         // scene Scene to update.
         // dt Delta time.
-        void Update(Scene* scene, float dt);
+        void Update(VkCommandBuffer commandBuffer, Scene* scene, float dt);
 
         // Render particles.
+        // commandBuffer Command buffer to render.
         // scene Scene to render.
         // camera Camera to render from.
-        void Render(Scene* scene, Camera* camera);
+        void Render(VkCommandBuffer commandBuffer, Scene* scene, Camera* camera);
 
     private:
         VkDevice mDevice;

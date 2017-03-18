@@ -55,6 +55,10 @@ class VkRenderer
         VkCommandPool mComputeCommandPool;
         VkQueue mComputeQueue;
 
+        uint32_t mTransferFamilyIndex;
+        VkCommandPool mTransferCommandPool;
+        VkQueue mTransferQueue;
+
         VkSurfaceKHR mSurfaceKHR;
         VkSurfaceFormatKHR mSurfaceFormatKHR;
         VkSurfaceCapabilitiesKHR mSurfaceCapabilitiesKHR;

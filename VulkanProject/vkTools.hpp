@@ -50,8 +50,7 @@ namespace vkTools
         const VkPipelineLayout& pipeline_layout,
         VkPipeline& graphics_pipeline );
 
-    uint32_t FindGraphicsFamilyIndex( const VkPhysicalDevice& gpu );
-    uint32_t FindComputeFamilyIndex(const VkPhysicalDevice& gpu);
+    uint32_t FindFamilyIndex( const VkPhysicalDevice& gpu, VkQueueFlagBits queue_flag_bit );
     uint32_t FindPresentFamilyIndex( const VkPhysicalDevice& gpu, const VkSurfaceKHR& surface );
     uint32_t FindMemoryType( const VkPhysicalDevice& gpu, const uint32_t& type_filter, const VkMemoryPropertyFlags& memory_property_flags );
     VkFormat FindSupportedFormat( const VkPhysicalDevice& gpu, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features );
@@ -61,6 +60,7 @@ namespace vkTools
     void CreateImage( const VkDevice& device, const VkPhysicalDevice& gpu, std::uint32_t width, std::uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& image_memory );
     void CreateImageView( const VkDevice& device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, VkImageView& image_view );
 
+    void CopyBuffer( const VkCommandBuffer& command_buffer, VkBuffer src_buffer, VkBuffer dst_buffer, std::uint32_t byte_size, std::uint32_t src_byte_offset, std::uint32_t dst_byte_offset );
     void CreateBuffer( const VkDevice& device, const VkPhysicalDevice& physical_device, std::size_t total_size, VkBufferUsageFlags buffer_usage_flags, VkMemoryPropertyFlags memory_property_flags, VkBuffer& buffer, VkDeviceMemory& buffer_memory, uint32_t& min_offset_alignment );
 
     VkCommandBuffer BeginSingleTimeCommand( const VkDevice& device, const VkCommandPool& command_pool );

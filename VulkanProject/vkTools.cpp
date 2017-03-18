@@ -248,7 +248,7 @@ void vkTools::CreateGraphicsPipeline(
 }
 
 
-uint32_t vkTools::FindGraphicsFamilyIndex( const VkPhysicalDevice& gpu )
+uint32_t vkTools::FindFamilyIndex( const VkPhysicalDevice& gpu, VkQueueFlagBits queue_flag_bit )
 {
     uint32_t queue_family_count = 0;
     vkGetPhysicalDeviceQueueFamilyProperties( gpu, &queue_family_count, nullptr );
@@ -256,31 +256,13 @@ uint32_t vkTools::FindGraphicsFamilyIndex( const VkPhysicalDevice& gpu )
     vkGetPhysicalDeviceQueueFamilyProperties( gpu, &queue_family_count, queue_family_properties_list.data() );
 
     for ( uint32_t i = 0; i < static_cast<uint32_t>(queue_family_properties_list.size()); ++i )
-        if ( queue_family_properties_list[ i ].queueCount > 0 && queue_family_properties_list[ i ].queueFlags & VK_QUEUE_GRAPHICS_BIT)
+        if ( queue_family_properties_list[ i ].queueCount > 0 && queue_family_properties_list[ i ].queueFlags & queue_flag_bit)
             return i;
 
-    MsgAssert(1, 0, "Vulkan runtime error. VKERROR: Queue family supporting graphics not found.");
+    MsgAssert(1, 0, "Vulkan runtime error. VKERROR: Supported queue family not found.");
 
     return 0;
 }
-
-
-uint32_t vkTools::FindComputeFamilyIndex(const VkPhysicalDevice& gpu)
-{
-    uint32_t queue_family_count = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queue_family_count, nullptr);
-    std::vector<VkQueueFamilyProperties> queue_family_properties_list(queue_family_count);
-    vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queue_family_count, queue_family_properties_list.data());
-
-    for (uint32_t i = 0; i < static_cast<uint32_t>(queue_family_properties_list.size()); ++i)
-        if (queue_family_properties_list[i].queueCount > 0 && queue_family_properties_list[i].queueFlags & VK_QUEUE_COMPUTE_BIT)
-            return i;
-
-    MsgAssert(1, 0, "Vulkan runtime error. VKERROR: Queue family supporting compute not found.");
-
-    return 0;
-}
-
 
 uint32_t vkTools::FindPresentFamilyIndex( const VkPhysicalDevice& gpu, const VkSurfaceKHR& surface )
 {
@@ -497,6 +479,16 @@ void vkTools::CreateImageView(const VkDevice& device, VkImage image, VkFormat fo
     VkErrorCheck(vkCreateImageView(device, &view_info, nullptr, &image_view));
 }
 
+
+void vkTools::CopyBuffer( const VkCommandBuffer& command_buffer, VkBuffer src_buffer, VkBuffer dst_buffer, std::uint32_t byte_size, std::uint32_t src_byte_offset, std::uint32_t dst_byte_offset )
+{
+    VkBufferCopy region;
+    region.size = byte_size;
+    region.srcOffset = src_byte_offset;
+    region.dstOffset = dst_byte_offset;
+
+    vkCmdCopyBuffer(command_buffer, src_buffer, dst_buffer, 1, &region);
+}
 
 void vkTools::CreateBuffer( const VkDevice& device, const VkPhysicalDevice& physical_device, std::size_t total_size, VkBufferUsageFlags buffer_usage_flags, VkMemoryPropertyFlags memory_property_flags, VkBuffer& buffer, VkDeviceMemory& buffer_memory, uint32_t& min_offset_alignment )
 {

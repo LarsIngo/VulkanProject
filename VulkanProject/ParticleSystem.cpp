@@ -57,7 +57,7 @@ ParticleSystem::~ParticleSystem()
     mBlendState->Release();*/
 }
 
-void ParticleSystem::Update(Scene* scene, float dt)
+void ParticleSystem::Update(VkCommandBuffer commandBuffer, Scene* scene, float dt)
 {
     //mpDeviceContext->CSSetShader(mComputeShader, NULL, NULL);
     //mpDeviceContext->CSSetShaderResources(0, 1, &scene->mParticleBuffer->GetInputBuffer()->mSRV);
@@ -78,7 +78,7 @@ void ParticleSystem::Update(Scene* scene, float dt)
     //mpDeviceContext->CSSetUnorderedAccessViews(0, 1, (ID3D11UnorderedAccessView**)p, NULL);
 }
 
-void ParticleSystem::Render(Scene* scene, Camera* camera)
+void ParticleSystem::Render(VkCommandBuffer commandBuffer, Scene* scene, Camera* camera)
 {
    /* mpDeviceContext->VSSetShader(mVertexShader, NULL, NULL);
     mpDeviceContext->GSSetShader(mGeometryShader, NULL, NULL);

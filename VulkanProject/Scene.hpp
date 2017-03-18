@@ -22,8 +22,9 @@ class Scene
         ~Scene();
 
         // Adds partilces to scene.
+        // commandBuffer Command buffer to make device copy.
         // particleList Vector of particles to add.
-        void AddParticles(std::vector<Particle>& particleList);
+        void AddParticles(VkCommandBuffer commandBuffer, std::vector<Particle>& particleList);
 
     private:
         unsigned int mMaxParticleCount;
