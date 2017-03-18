@@ -27,11 +27,11 @@ ParticleSystem::ParticleSystem(VkDevice device, VkPhysicalDevice physicalDevice)
     int t = (sizeof(RenderMetaData));
     assert(sizeof(RenderMetaData) % minOffsetAligment == 0);
 
-    //// Create render pipeline.
-    //{
-    //    DxHelp::CreateVS(mpDevice, "resources/shaders/Particles_Render_VS.hlsl", "main", &mVertexShader);
-    //    DxHelp::CreateGS(mpDevice, "resources/shaders/Particles_Render_GS.hlsl", "main", &mGeometryShader);
-    //    DxHelp::CreatePS(mpDevice, "resources/shaders/Particles_Render_PS.hlsl", "main", &mPixelShader);
+    // Create render pipeline.
+    {
+        vkTools::CreateShaderModule(mDevice, "resources/shaders/Particles_Render_VS.spv", mVertexShaderModule);
+        vkTools::CreateShaderModule(mDevice, "resources/shaders/Particles_Render_GS.spv", mGeometryShaderModule);
+        vkTools::CreateShaderModule(mDevice, "resources/shaders/Particles_Render_PS.spv", mPixelShaderModule);
 
     //    {   // Create blend state.
     //        D3D11_BLEND_DESC blendDesc;
@@ -50,10 +50,10 @@ ParticleSystem::ParticleSystem(VkDevice device, VkPhysicalDevice physicalDevice)
 
     //        DxAssert(mpDevice->CreateBlendState(&blendDesc, &mBlendState), S_OK);
     //    }
-    //}
+    }
 
-    //// Create update pipeline.
-    //DxHelp::CreateCS(mpDevice, "resources/shaders/Particles_Update_CS.hlsl", "main", &mComputeShader);
+    // Create update pipeline.
+    vkTools::CreateShaderModule(mDevice, "resources/shaders/Particles_Update_CS.spv", mComputeShaderModule);
 }
 
 ParticleSystem::~ParticleSystem()
@@ -63,11 +63,12 @@ ParticleSystem::~ParticleSystem()
     vkDestroyBuffer(mDevice, mUpdateMetaDataBuffer, nullptr);
     vkDestroyBuffer(mDevice, mRenderMetaDataBuffer, nullptr);
 
-    //mComputeShader->Release();
+    vkDestroyShaderModule(mDevice, mComputeShaderModule, nullptr);
 
-    //mVertexShader->Release();
-    //mGeometryShader->Release();
-    //mPixelShader->Release();
+    vkDestroyShaderModule(mDevice, mVertexShaderModule, nullptr);
+    vkDestroyShaderModule(mDevice, mGeometryShaderModule, nullptr);
+    vkDestroyShaderModule(mDevice, mPixelShaderModule, nullptr);
+
     //mBlendState->Release();
 }
 
@@ -94,8 +95,6 @@ void ParticleSystem::Update(VkCommandBuffer commandBuffer, Scene* scene, float d
 
 void ParticleSystem::Render(VkCommandBuffer commandBuffer, Scene* scene, Camera* camera)
 {
-    VkShaderModule mVertexShaderModule;
-    vkTools::CreateShaderModule(mDevice, "resources/shaders/Particles_Render_VS.spv", mVertexShaderModule);
 
 
 

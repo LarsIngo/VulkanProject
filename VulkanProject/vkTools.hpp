@@ -29,7 +29,7 @@ namespace vkTools
 
     void VkErrorCheck( const VkResult& result );
 
-    std::vector<char> ReadFile( const std::string& file_path );
+    void ReadSPV( const std::string& file_path, std::vector<char>& output );
 
     void CreateShaderModule( const VkDevice& device, const char* shader_spv_path, VkShaderModule& shader_module );
 

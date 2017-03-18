@@ -12,34 +12,33 @@
 #include <iostream>
 #include <vulkan/vulkan.h>
 
-std::vector<char> vkTools::ReadFile( const std::string& file_path )
+void vkTools::ReadSPV( const std::string& file_path, std::vector<char>& output)
 {
     std::ifstream file(file_path, std::ios::ate | std::ios::binary );
 
     if (!file.is_open()) {
-        std::cout << (" Vulkan runtime error.", std::string("READFILEERROR: failed to open file : " + file_path + ".").c_str()) << std:: endl;
-        exit(-1);
+        std::string msg("Vulkan runtime error." + std::string("READFILEERROR: failed to open file : " + file_path + "."));
+        MsgAssert(1, 0, msg.c_str());
     }
 
     size_t fileSize = (size_t)file.tellg();
-    std::vector<char> buffer( fileSize );
+    output.resize(fileSize);
 
     file.seekg(0);
-    file.read( buffer.data(), fileSize );
+    file.read(output.data(), fileSize);
 
     file.close();
-
-    return buffer;
 }
 
 
 void vkTools::CreateShaderModule( const VkDevice& device, const char* shader_spv_path, VkShaderModule& shader_module )
 {
-    auto shader_code = vkTools::ReadFile( shader_spv_path );
+    std::vector<char> shader_spv;
+    vkTools::ReadSPV( shader_spv_path, shader_spv);
     VkShaderModuleCreateInfo shader_module_create_info = {};
     shader_module_create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    shader_module_create_info.codeSize = shader_code.size();
-    shader_module_create_info.pCode = (uint32_t*)shader_code.data();
+    shader_module_create_info.codeSize = shader_spv.size();
+    shader_module_create_info.pCode = (uint32_t*)shader_spv.data();
     VkErrorCheck( vkCreateShaderModule( device, &shader_module_create_info, nullptr, &shader_module ) );
 }
 

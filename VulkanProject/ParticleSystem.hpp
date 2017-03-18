@@ -35,12 +35,12 @@ class ParticleSystem
         VkDevice mDevice;
         VkPhysicalDevice mPhysicalDevice;
 
-        //VkShaderModule mComputeShaderModule;
-        //ID3D11ComputeShader* mComputeShader;
+        VkShaderModule mComputeShaderModule;
 
-        //ID3D11VertexShader* mVertexShader;
-        //ID3D11GeometryShader* mGeometryShader;
-        //ID3D11PixelShader* mPixelShader;
+        VkShaderModule mVertexShaderModule;
+        VkShaderModule mGeometryShaderModule;
+        VkShaderModule mPixelShaderModule;
+
         //ID3D11BlendState* mBlendState;
         
         struct UpdateMetaData
