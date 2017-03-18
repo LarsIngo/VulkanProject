@@ -43,11 +43,11 @@
     <ClCompile Include="Scene.cpp">
       <Filter>Scene</Filter>
     </ClCompile>
-    <ClCompile Include="ParticleSystem.cpp">
-      <Filter>Particle</Filter>
-    </ClCompile>
     <ClCompile Include="StorageSwapBuffer.cpp">
       <Filter>Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="ParticleRenderSystem.cpp">
+      <Filter>Particle</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -78,11 +78,11 @@
     <ClInclude Include="Particle.hpp">
       <Filter>Particle</Filter>
     </ClInclude>
-    <ClInclude Include="ParticleSystem.hpp">
-      <Filter>Particle</Filter>
-    </ClInclude>
     <ClInclude Include="StorageSwapBuffer.hpp">
       <Filter>Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="ParticleRenderSystem.hpp">
+      <Filter>Particle</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

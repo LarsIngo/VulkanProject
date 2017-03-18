@@ -7,7 +7,7 @@
 #include "InputManager.hpp"
 #include "Camera.hpp"
 #include "vkTools.hpp"
-#include "ParticleSystem.hpp"
+#include "ParticleRenderSystem.hpp"
 #include "Scene.hpp"
 
 int main()
@@ -24,6 +24,7 @@ int main()
     VkCommandPool computeCommandPool = renderer.mComputeCommandPool;
     VkQueue graphicsQueue = renderer.mGraphicsQueue;
     VkQueue computeQueue = renderer.mComputeQueue;
+    VkRenderPass renderPass = renderer.mRenderPass;
     VkCommandBuffer graphicsCommandBuffer;
     vkTools::CreateCommandBuffer(device, graphicsCommandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, graphicsCommandBuffer);
     VkCommandBuffer computeCommandBuffer;
@@ -31,11 +32,11 @@ int main()
 
     VkCommandBuffer transferCommandBuffer = vkTools::BeginSingleTimeCommand(device, renderer.mTransferCommandPool);
 
-    ParticleSystem particleSystem(device, physicalDevice);
+    ParticleRenderSystem particleRenderSystem(device, physicalDevice, width, height, renderer.mSurfaceFormatKHR.format, renderPass);
 
     InputManager inputManager(renderer.mGLFWwindow);
 
-    FrameBuffer frameBuffer(device, physicalDevice, width, height, renderer.mSurfaceFormatKHR.format);
+    FrameBuffer frameBuffer(device, physicalDevice, width, height, renderer.mSurfaceFormatKHR.format, renderPass);
     Camera camera(60.f, &frameBuffer);
     camera.mPosition.z = 0.f;
 
@@ -72,15 +73,15 @@ int main()
         CPUTIMER(dt);
 
         // +++ UPDATE +++ //
-        vkTools::BeginCommandBuffer(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, computeCommandBuffer);
+        //vkTools::BeginCommandBuffer(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, computeCommandBuffer);
 
-        camera.Update(20.f, 2.f, dt, &inputManager);
-        particleSystem.Update(computeCommandBuffer, &scene, dt);
+        //camera.Update(20.f, 2.f, dt, &inputManager);
+        //particleSystem.Update(computeCommandBuffer, &scene, dt);
 
-        vkTools::EndCommandBuffer(computeCommandBuffer);
-        vkTools::SubmitCommandBuffer(computeQueue, computeCommandBuffer);
-        vkTools::WaitQueue(computeQueue);
-        vkTools::ResetCommandBuffer(computeCommandBuffer);
+        //vkTools::EndCommandBuffer(computeCommandBuffer);
+        //vkTools::SubmitCommandBuffer(computeQueue, computeCommandBuffer);
+        //vkTools::WaitQueue(computeQueue);
+        //vkTools::ResetCommandBuffer(computeCommandBuffer);
         // --- UPDATE --- //
 
         // +++ RENDER +++ //
@@ -91,7 +92,7 @@ int main()
 
 
         camera.mpFrameBuffer->Clear(graphicsCommandBuffer, 0.2f, 0.2f, 0.2f);
-        particleSystem.Render(graphicsCommandBuffer, &scene, &camera);
+        particleRenderSystem.Render(graphicsCommandBuffer, &scene, &camera);
 
 
         backBuffer->Copy(graphicsCommandBuffer, camera.mpFrameBuffer);

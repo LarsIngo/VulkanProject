@@ -63,36 +63,36 @@ void vkTools::CreateRenderPass( const VkDevice& device, const VkFormat& format, 
     VkAttachmentDescription color_attachment = {};
     color_attachment.format = format;
     color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-    color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE; //VK_ATTACHMENT_LOAD_OP_CLEAR
     color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
     color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     color_attachment.initialLayout = initial_layout;
     color_attachment.finalLayout = final_layout;
 
-    VkAttachmentDescription depth_attachment = {};
-    depth_attachment.format = depth_format;
-    depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-    depth_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    depth_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    depth_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    depth_attachment.initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-    depth_attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    //VkAttachmentDescription depth_attachment = {};
+    //depth_attachment.format = depth_format;
+    //depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    //depth_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    //depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    //depth_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    //depth_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    //depth_attachment.initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    //depth_attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
     
     VkAttachmentReference color_attachment_ref = {};
     color_attachment_ref.attachment = 0;
     color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-    VkAttachmentReference depth_attachment_ref = {};
-    depth_attachment_ref.attachment = 1;
-    depth_attachment_ref.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    //VkAttachmentReference depth_attachment_ref = {};
+    //depth_attachment_ref.attachment = 1;
+    //depth_attachment_ref.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
     VkSubpassDescription subPass = {};
     subPass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     subPass.colorAttachmentCount = 1;
     subPass.pColorAttachments = &color_attachment_ref;
-    subPass.pDepthStencilAttachment = &depth_attachment_ref;
+    //subPass.pDepthStencilAttachment = &depth_attachment_ref;
 
     VkSubpassDependency dependency = {};
     dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -102,7 +102,7 @@ void vkTools::CreateRenderPass( const VkDevice& device, const VkFormat& format, 
     dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
     dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
-    std::vector<VkAttachmentDescription> attachment_list = { color_attachment, depth_attachment };
+    std::vector<VkAttachmentDescription> attachment_list = { color_attachment /*, depth_attachment*/ };
     VkRenderPassCreateInfo render_pass_info = {};
     render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
     render_pass_info.attachmentCount = attachment_list.size();
@@ -118,7 +118,9 @@ void vkTools::CreateRenderPass( const VkDevice& device, const VkFormat& format, 
 
 void vkTools::CreateFramebuffer( const VkDevice& device, const VkExtent2D extent, const VkRenderPass& render_pass, const VkImageView& color_image_view, const VkImageView& depth_image_view, VkFramebuffer& framebuffer )
 {
-    std::vector<VkImageView> attachment_list = { color_image_view, depth_image_view  };
+    std::vector<VkImageView> attachment_list = { color_image_view };
+    if (depth_image_view != VK_NULL_HANDLE)
+        attachment_list.push_back(depth_image_view);
 
     VkFramebufferCreateInfo framebuffer_create_info = {};
     framebuffer_create_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -133,33 +135,16 @@ void vkTools::CreateFramebuffer( const VkDevice& device, const VkExtent2D extent
 }
 
 
-void vkTools::CreatePipelineLayout(const VkDevice& device, VkPipelineLayout& pipeline_layout)
-{
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
-    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 0;
-    pipelineLayoutInfo.pushConstantRangeCount = 0;
-
-    VkErrorCheck( vkCreatePipelineLayout( device, &pipelineLayoutInfo, nullptr, &pipeline_layout ) );
-}
-
-
 void vkTools::CreateGraphicsPipeline(
     const VkDevice& device, 
     const VkExtent2D& extent,
     const std::vector<VkPipelineShaderStageCreateInfo>& shader_stage_list,
-    const std::vector<VkVertexInputAttributeDescription>& vertex_input_attribute_desc_list,
-    const VkVertexInputBindingDescription& vertex_input_binding_desc,
     const VkRenderPass& render_pass,
     const VkPipelineLayout& pipeline_layout,
     VkPipeline& graphics_pipeline )
 {
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertexInputInfo.vertexBindingDescriptionCount = 1;
-    vertexInputInfo.pVertexBindingDescriptions = &vertex_input_binding_desc;
-    vertexInputInfo.vertexAttributeDescriptionCount = vertex_input_attribute_desc_list.size();
-    vertexInputInfo.pVertexAttributeDescriptions = vertex_input_attribute_desc_list.data();
 
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = {};
     inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -346,8 +331,77 @@ void vkTools::TransitionImageLayout(const VkCommandBuffer& command_buffer, VkIma
     barrier.subresourceRange.baseArrayLayer = 0;
     barrier.subresourceRange.layerCount = 1;
 
+    if (old_layout == VK_IMAGE_LAYOUT_UNDEFINED) {
+        barrier.srcAccessMask = 0;
+    }
+    else if (old_layout == VK_IMAGE_LAYOUT_GENERAL) {
+        barrier.srcAccessMask = 0; //?
+    }
+    else if (old_layout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) {
+        barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT; //?
+    }
+    else if (old_layout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
+        barrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;// | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    }
+    else if (old_layout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL) {
+        barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT; //?
+    }
+    else if (old_layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+        barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT; //?
+    }
+    else if (old_layout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) {
+        barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+    }
+    else if (old_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    }
+    else if (old_layout == VK_IMAGE_LAYOUT_PREINITIALIZED) {
+        barrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
+    }
+    else if (old_layout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR) {
+        barrier.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+    }
+    else {
+        MsgAssert(1, 0, "Vulkan runtime error. VKERROR: Unsupported layout transition.");
+    }
 
-    if (old_layout == VK_IMAGE_LAYOUT_PREINITIALIZED && new_layout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) {
+    if (new_layout == VK_IMAGE_LAYOUT_UNDEFINED) {
+        barrier.dstAccessMask = 0;
+    }
+    else if (new_layout == VK_IMAGE_LAYOUT_GENERAL) {
+        barrier.dstAccessMask = 0; //?
+    }
+    else if (new_layout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) {
+        barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    }
+    else if (new_layout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
+        barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;// | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    }
+    else if (new_layout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL) {
+        barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    }
+    else if (new_layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+        barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    }
+    else if (new_layout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) {
+        barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+    }
+    else if (new_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+        barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    }
+    else if (new_layout == VK_IMAGE_LAYOUT_PREINITIALIZED) {
+        barrier.dstAccessMask = VK_ACCESS_HOST_WRITE_BIT; //?
+    }
+    else if (new_layout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR) {
+        barrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+    }
+    else {
+        MsgAssert(1, 0, "Vulkan runtime error. VKERROR: Unsupported layout transition.");
+    }
+
+
+
+    /*if (old_layout == VK_IMAGE_LAYOUT_PREINITIALIZED && new_layout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) {
         barrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
         barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
     }
@@ -387,9 +441,13 @@ void vkTools::TransitionImageLayout(const VkCommandBuffer& command_buffer, VkIma
         barrier.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
         barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
     }
+    else if (old_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && new_layout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) {
+        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    }
     else {
         MsgAssert(1,0, "Vulkan runtime error. VKERROR: Unsupported layout transition.");
-    }
+    }*/
 
     vkCmdPipelineBarrier(
         command_buffer,

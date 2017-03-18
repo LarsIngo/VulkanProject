@@ -5,11 +5,11 @@
 #include <vulkan/vulkan.h>
 
 class StorageSwapBuffer;
-class ParticleSystem;
+class ParticleRenderSystem;
 
 class Scene
 {
-    friend ParticleSystem;
+    friend ParticleRenderSystem;
 
     public:
         // Constructor.

@@ -39,13 +39,9 @@ namespace vkTools
 
     void CreateFramebuffer( const VkDevice& device, const VkExtent2D extent, const VkRenderPass& render_pass, const VkImageView& color_image_view, const VkImageView& depth_image_view, VkFramebuffer& framebuffer );
 
-    void CreatePipelineLayout( const VkDevice& device, VkPipelineLayout& pipeline_layout );
-
     void CreateGraphicsPipeline( const VkDevice& device,
         const VkExtent2D& extent,
         const std::vector<VkPipelineShaderStageCreateInfo>& shader_stage_list,
-        const std::vector<VkVertexInputAttributeDescription>& vertex_input_attribute_desc_list,
-        const VkVertexInputBindingDescription& vertex_input_binding_desc,
         const VkRenderPass& render_pass,
         const VkPipelineLayout& pipeline_layout,
         VkPipeline& graphics_pipeline );

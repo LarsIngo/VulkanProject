@@ -71,6 +71,8 @@ class VkRenderer
         VkSemaphore mComputeCompleteSemaphore;
         VkSemaphore mPresentCompleteSemaphore;
 
+        VkRenderPass mRenderPass;
+
     private:
         void InitialiseGLFW();
         void DeInitialiseGLFW();

@@ -11,7 +11,7 @@ class FrameBuffer
         // width Width in pixels.
         // height Height in pixels.
         // initTexture Initialised image. DEFAULT [VK_NULL_HANDLE]
-        FrameBuffer(VkDevice device, VkPhysicalDevice physicalDevice, unsigned int width, unsigned int height, VkFormat format, VkImage initTexture = VK_NULL_HANDLE);
+        FrameBuffer(VkDevice device, VkPhysicalDevice physicalDevice, unsigned int width, unsigned int height, VkFormat format, VkRenderPass renderPass, VkImage initTexture = VK_NULL_HANDLE);
 
         // Destructor.
         ~FrameBuffer();
@@ -35,9 +35,11 @@ class FrameBuffer
         // Color image.
         VkImage mImage;
         VkImageView mImageView;
+        VkFramebuffer mFrameBuffer;
         VkFormat mFormat;
         VkImageLayout mImageLayout; 
         VkDeviceMemory mImageMemory;
+        VkRenderPass mRenderPass;
 
     private:
         VkDevice mDevice;

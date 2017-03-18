@@ -2,7 +2,7 @@
 #include "vkTools.hpp"
 #include <assert.h>
 
-FrameBuffer::FrameBuffer(VkDevice device, VkPhysicalDevice physicalDevice, unsigned int width, unsigned int height, VkFormat format, VkImage initImage)
+FrameBuffer::FrameBuffer(VkDevice device, VkPhysicalDevice physicalDevice, unsigned int width, unsigned int height, VkFormat format, VkRenderPass renderPass, VkImage initImage)
 {
     mDevice = device;
     mPhysicalDevice = physicalDevice;
@@ -14,6 +14,7 @@ FrameBuffer::FrameBuffer(VkDevice device, VkPhysicalDevice physicalDevice, unsig
     mImageView = VK_NULL_HANDLE;
     mFormat = format;
     mImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    mRenderPass = renderPass;
 
     mMyImage = initImage == VK_NULL_HANDLE;
     if (mMyImage)
@@ -24,6 +25,9 @@ FrameBuffer::FrameBuffer(VkDevice device, VkPhysicalDevice physicalDevice, unsig
     }
 
     vkTools::CreateImageView(mDevice, mImage, mFormat, VK_IMAGE_ASPECT_COLOR_BIT, mImageView);
+
+    VkExtent2D extent = { width, height };
+    vkTools::CreateFramebuffer(mDevice, extent, mRenderPass, mImageView, VK_NULL_HANDLE, mFrameBuffer);
 }
 
 FrameBuffer::~FrameBuffer()
@@ -34,6 +38,7 @@ FrameBuffer::~FrameBuffer()
         vkDestroyImage(mDevice, mImage, nullptr);
     }
     vkDestroyImageView(mDevice, mImageView, nullptr);
+    vkDestroyFramebuffer(mDevice, mFrameBuffer, nullptr);
 }
 
 void FrameBuffer::Clear(VkCommandBuffer commandBuffer, float r, float g, float b, float a, float depth)

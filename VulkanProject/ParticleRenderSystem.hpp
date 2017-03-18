@@ -8,22 +8,22 @@ class StorageBuffer;
 class FrameBuffer;
 class Camera;
 
-class ParticleSystem
+class ParticleRenderSystem
 {
     public:
         // Constructor.
         // device Vulkan device.
         // physicalDevice Vulkan physical device.
-        ParticleSystem(VkDevice device, VkPhysicalDevice physicalDevice);
+        ParticleRenderSystem(VkDevice device, VkPhysicalDevice physicalDevice, unsigned int width, unsigned int height, VkFormat format, VkRenderPass renderPass);
 
         // Destructor.
-        ~ParticleSystem();
+        ~ParticleRenderSystem();
 
         // Update particles.
         // commandBuffer Command buffer to update.
         // scene Scene to update.
         // dt Delta time.
-        void Update(VkCommandBuffer commandBuffer, Scene* scene, float dt);
+        //void Update(VkCommandBuffer commandBuffer, Scene* scene, float dt);
 
         // Render particles.
         // commandBuffer Command buffer to render.
@@ -34,12 +34,22 @@ class ParticleSystem
     private:
         VkDevice mDevice;
         VkPhysicalDevice mPhysicalDevice;
+        VkExtent2D mExtent;
+        VkFormat mFormat;
+        VkRenderPass mRenderPass;
 
-        VkShaderModule mComputeShaderModule;
+        //VkShaderModule mComputeShaderModule;
+
 
         VkShaderModule mVertexShaderModule;
         VkShaderModule mGeometryShaderModule;
         VkShaderModule mPixelShaderModule;
+
+        VkDescriptorPool mPipelineDescriptorPool;
+        VkDescriptorSet mPipelineDescriptorSet;
+        VkDescriptorSetLayout mPipelineDescriptorSetLayout;
+        VkPipelineLayout mPipelineLayout;
+        VkPipeline mPipeline;
 
         //ID3D11BlendState* mBlendState;
         

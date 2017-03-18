@@ -453,12 +453,14 @@ void VkRenderer::InitialiseSwapchanFrameBuffers()
     uint32_t swapchainImageCount = static_cast<uint32_t>(mSwapchainFrameBufferList.size());
     vkTools::VkErrorCheck(vkGetSwapchainImagesKHR(mDevice, mSwapchainKHR, &swapchainImageCount, swapchainImageList.data()));
 
+    vkTools::CreateRenderPass(mDevice, mSurfaceFormatKHR.format, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_FORMAT_UNDEFINED, mRenderPass);
     for (std::size_t i = 0; i < mSwapchainFrameBufferList.size(); ++i)
-        mSwapchainFrameBufferList[i] = new FrameBuffer(mDevice, mPhysicalDevice, mWinWidth, mWinHeight, mSurfaceFormatKHR.format, swapchainImageList[i]);
+        mSwapchainFrameBufferList[i] = new FrameBuffer(mDevice, mPhysicalDevice, mWinWidth, mWinHeight, mSurfaceFormatKHR.format, mRenderPass, swapchainImageList[i]);
 }
 
 void VkRenderer::DeInitialiseSwapchanFrameBuffers()
 {
+    vkDestroyRenderPass(mDevice, mRenderPass, nullptr);
     for (std::size_t i = 0; i < mSwapchainFrameBufferList.size(); ++i)
         delete mSwapchainFrameBufferList[i];
 }
