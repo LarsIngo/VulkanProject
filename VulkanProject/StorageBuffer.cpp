@@ -13,14 +13,14 @@ StorageBuffer::StorageBuffer(VkDevice device, VkPhysicalDevice physicalDevice, u
     vkTools::CreateBuffer(mDevice, mPhysicalDevice, mSize,
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
         mBuffer, mBufferMemory, minOffsetAligment
-    );
+        );
     MsgAssert(mStride % minOffsetAligment, 0, "Vulkan runtime error. VKERROR: Unsupported storage buffer aligment.");
 
     // Staging buffer.
     vkTools::CreateBuffer(mDevice, mPhysicalDevice, mSize,
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
         mStagingBuffer, mStagingBufferMemory, minOffsetAligment
-    );
+        );
     MsgAssert(mStride % minOffsetAligment, 0, "Vulkan runtime error. VKERROR: Unsupported storage buffer aligment.");
 }
 

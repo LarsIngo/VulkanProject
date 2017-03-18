@@ -1,0 +1,44 @@
+#version 450
+
+// Particle.
+struct Particle
+{
+    vec4 position;
+    vec4 velocity;
+    vec4 color;
+    vec4 scale;
+};
+// Input particles.
+layout(binding = 0) buffer CSInput { Particle g_InputParticles[]; };
+
+// Output particles.
+layout(binding = 1) buffer CSOutput { Particle g_OutputParticles[]; };
+
+// Meta data.
+//struct MetaData
+//{
+//    float dt;
+//    uint particleCount;
+//    float pad[6];
+//};
+// Meta buffer.
+//StructuredBuffer<MetaData> g_MetaBuffer : register(t1);
+
+layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+void main()
+{
+    uint tID = uint(gl_GlobalInvocationID.x);
+    g_OutputParticles[tID] = g_InputParticles[tID];
+
+    //MetaData metaData = g_MetaBuffer[0];
+    //float dt = metaData.dt;
+    //uint particleCount = metaData.particleCount;
+    //uint tID = threadID.x;
+
+    //if (tID < particleCount)
+    //{
+    //    Particle particle = g_InputParticles[tID];
+    //    particle.position.xyz = particle.position.xyz + particle.velocity * dt;
+    //    g_OutputParticles[tID] = particle;
+    //}
+}

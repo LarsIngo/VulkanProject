@@ -35,12 +35,13 @@ class ParticleSystem
         VkDevice mDevice;
         VkPhysicalDevice mPhysicalDevice;
 
-        /*ID3D11ComputeShader* mComputeShader;
+        //VkShaderModule mComputeShaderModule;
+        //ID3D11ComputeShader* mComputeShader;
 
-        ID3D11VertexShader* mVertexShader;
-        ID3D11GeometryShader* mGeometryShader;
-        ID3D11PixelShader* mPixelShader;
-        ID3D11BlendState* mBlendState;
+        //ID3D11VertexShader* mVertexShader;
+        //ID3D11GeometryShader* mGeometryShader;
+        //ID3D11PixelShader* mPixelShader;
+        //ID3D11BlendState* mBlendState;
         
         struct UpdateMetaData
         {
@@ -48,14 +49,16 @@ class ParticleSystem
             unsigned int particleCount;
             float pad[6];
         } mUpdateMetaData;
-        ID3D11ShaderResourceView* mUpdateMetaDataBuffer;
+        VkBuffer mUpdateMetaDataBuffer;
+        VkDeviceMemory mUpdateMetaDataBufferMemory;
 
         struct RenderMetaData
         {
             glm::mat4 vpMatrix;
             glm::vec3 lensPosition;
             glm::vec3 lensUpDirection;
-            float pad[6];
+            float pad[2];
         } mRenderMetaData;
-        ID3D11ShaderResourceView* mRenderMetaDataBuffer;*/
+        VkBuffer mRenderMetaDataBuffer;
+        VkDeviceMemory mRenderMetaDataBufferMemory;
 };

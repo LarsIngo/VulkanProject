@@ -5,15 +5,27 @@
 #include "StorageSwapBuffer.hpp"
 #include "Camera.hpp"
 #include <glm/gtc/matrix_transform.hpp>
+#include "vkTools.hpp"
 
 ParticleSystem::ParticleSystem(VkDevice device, VkPhysicalDevice physicalDevice)
 {
     mDevice = device;
     mPhysicalDevice = physicalDevice;
 
-    //// Create meta buffers.
-    //DxHelp::CreateCPUwriteGPUreadStructuredBuffer<UpdateMetaData>(mpDevice, 1, &mUpdateMetaDataBuffer);
-    //DxHelp::CreateCPUwriteGPUreadStructuredBuffer<RenderMetaData>(mpDevice, 1, &mRenderMetaDataBuffer);
+    // Create meta buffers.
+    uint32_t minOffsetAligment;
+    vkTools::CreateBuffer(mDevice, mPhysicalDevice, sizeof(UpdateMetaData),
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        mUpdateMetaDataBuffer, mUpdateMetaDataBufferMemory, minOffsetAligment
+        );
+    assert(sizeof(UpdateMetaData) % minOffsetAligment == 0);
+
+    vkTools::CreateBuffer(mDevice, mPhysicalDevice, sizeof(RenderMetaData),
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        mRenderMetaDataBuffer, mRenderMetaDataBufferMemory, minOffsetAligment
+    );
+    int t = (sizeof(RenderMetaData));
+    assert(sizeof(RenderMetaData) % minOffsetAligment == 0);
 
     //// Create render pipeline.
     //{
@@ -46,15 +58,17 @@ ParticleSystem::ParticleSystem(VkDevice device, VkPhysicalDevice physicalDevice)
 
 ParticleSystem::~ParticleSystem()
 {
-    /*mUpdateMetaDataBuffer->Release();
-    mRenderMetaDataBuffer->Release();
+    vkFreeMemory(mDevice, mUpdateMetaDataBufferMemory, nullptr);
+    vkFreeMemory(mDevice, mRenderMetaDataBufferMemory, nullptr);
+    vkDestroyBuffer(mDevice, mUpdateMetaDataBuffer, nullptr);
+    vkDestroyBuffer(mDevice, mRenderMetaDataBuffer, nullptr);
 
-    mComputeShader->Release();
+    //mComputeShader->Release();
 
-    mVertexShader->Release();
-    mGeometryShader->Release();
-    mPixelShader->Release();
-    mBlendState->Release();*/
+    //mVertexShader->Release();
+    //mGeometryShader->Release();
+    //mPixelShader->Release();
+    //mBlendState->Release();
 }
 
 void ParticleSystem::Update(VkCommandBuffer commandBuffer, Scene* scene, float dt)
@@ -80,6 +94,12 @@ void ParticleSystem::Update(VkCommandBuffer commandBuffer, Scene* scene, float d
 
 void ParticleSystem::Render(VkCommandBuffer commandBuffer, Scene* scene, Camera* camera)
 {
+    VkShaderModule mVertexShaderModule;
+    vkTools::CreateShaderModule(mDevice, "resources/shaders/Particles_Render_VS.spv", mVertexShaderModule);
+
+
+
+
    /* mpDeviceContext->VSSetShader(mVertexShader, NULL, NULL);
     mpDeviceContext->GSSetShader(mGeometryShader, NULL, NULL);
     mpDeviceContext->PSSetShader(mPixelShader, NULL, NULL);

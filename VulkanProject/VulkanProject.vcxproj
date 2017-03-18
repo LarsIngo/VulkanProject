@@ -177,6 +177,12 @@
     <ClCompile Include="VkRenderer.cpp" />
     <ClCompile Include="vkTools.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="resources\shaders\Particles_Render_GS.geom" />
+    <None Include="resources\shaders\Particles_Render_PS.frag" />
+    <None Include="resources\shaders\Particles_Render_VS.vert" />
+    <None Include="resources\shaders\Particles_Update_CS.comp" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

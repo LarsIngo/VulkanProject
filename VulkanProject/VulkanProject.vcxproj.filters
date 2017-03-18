@@ -16,6 +16,9 @@
     <Filter Include="Particle">
       <UniqueIdentifier>{385e92e9-3a3d-428b-bcfe-38f4b4c4ced7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shaders">
+      <UniqueIdentifier>{df326ff9-28bc-4340-ad8b-6814c5df3c2c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
@@ -81,5 +84,19 @@
     <ClInclude Include="StorageSwapBuffer.hpp">
       <Filter>Vulkan</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="resources\shaders\Particles_Update_CS.comp">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="resources\shaders\Particles_Render_VS.vert">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="resources\shaders\Particles_Render_PS.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="resources\shaders\Particles_Render_GS.geom">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>
