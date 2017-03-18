@@ -7,6 +7,8 @@
 #include "InputManager.hpp"
 #include "Camera.hpp"
 #include "vkTools.hpp"
+#include "ParticleSystem.hpp"
+#include "Scene.hpp"
 
 int main()
 {
@@ -22,6 +24,12 @@ int main()
     VkCommandPool computeCommandPool = renderer.mComputeCommandPool;
     VkQueue graphicsQueue = renderer.mGraphicsQueue;
     VkQueue computeQueue = renderer.mComputeQueue;
+    VkCommandBuffer graphicsCommandBuffer;
+    vkTools::CreateCommandBuffer(device, graphicsCommandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, graphicsCommandBuffer);
+    VkCommandBuffer computeCommandBuffer;
+    vkTools::CreateCommandBuffer(device, computeCommandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, computeCommandBuffer);
+
+    ParticleSystem particleSystem(device, physicalDevice);
 
     InputManager inputManager(renderer.mGLFWwindow);
 
@@ -29,10 +37,27 @@ int main()
     Camera camera(60.f, &frameBuffer);
     camera.mPosition.z = 0.f;
 
-    VkCommandBuffer graphicsCommandBuffer;
-    vkTools::CreateCommandBuffer(device, graphicsCommandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, graphicsCommandBuffer);
-    VkCommandBuffer computeCommandBuffer;
-    vkTools::CreateCommandBuffer(device, computeCommandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, computeCommandBuffer);
+    Scene scene(device, physicalDevice, 1024 * 1024);
+    {
+        std::vector<Particle> particleList;
+        Particle particle;
+        float spaceing = 1.f;
+        float speed = 0.1f;
+        int lenX = 1024;
+        int lenY = 1024;
+        particle.scale = glm::vec4(spaceing / 2.f, spaceing / 2.f, 0.f, 0.f);
+        for (int y = 0; y < lenY; ++y)
+        {
+            for (int x = 0; x < lenX; ++x)
+            {
+                particle.position = glm::vec4(x * spaceing, y * spaceing, 0.f, 0.f);
+                particle.velocity = -glm::normalize(particle.position + glm::vec4(speed, speed, 0.f, 0.f));
+                particle.color = glm::vec4((float)y / lenY, 0.7f, 1.f - (float)x / lenX, 1.f);
+                particleList.push_back(particle);
+            }
+        }
+        scene.AddParticles(particleList);
+    }
     // --- INIT --- //
 
     // +++ MAIN LOOP +++ //

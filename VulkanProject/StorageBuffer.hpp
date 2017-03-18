@@ -1,17 +1,16 @@
 #pragma once
 
-#include <d3d11.h>
+#include <vulkan/vulkan.h>
 
 class StorageBuffer
 {
     public:
         // Constructor.
-        // pDevice Pointer to D3D11 device.
-        // pDeviceContext Pointer to D3D11 device context.
+        // device Vulkan device.
+        // physicalDevice Vulkan physical device.
         // totalSize Total size in bytes.
         // stride Stride of each element in bytes.
-        // bindFlags Bind flags. DEFAULT [D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS]
-        StorageBuffer(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext, unsigned int totalSize, unsigned int stride, UINT bindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS);
+        StorageBuffer(VkDevice device, VkPhysicalDevice physicalDevice, unsigned int totalSize, unsigned int stride);
 
         // Destructor.
         ~StorageBuffer();
@@ -33,17 +32,17 @@ class StorageBuffer
         // off Offset to write data in bytes.
         void Write(void* data, unsigned int size, unsigned int offset);
 
-        // Buffer.
-        ID3D11Buffer* mBuff;
-        ID3D11ShaderResourceView* mSRV;
-        ID3D11UnorderedAccessView* mUAV;
+        // Storage buffer.
+        VkBuffer mBuffer;
+        VkDeviceMemory mBufferMemory;
 
     private:
-        ID3D11Device* mpDevice;
-        ID3D11DeviceContext* mpDeviceContext;
+        VkDevice mDevice;
+        VkPhysicalDevice mPhysicalDevice;
 
         // Staging buffer.
-        ID3D11Buffer* mStagingBuff;
+        VkBuffer mStagingBuffer;
+        VkDeviceMemory mStagingBufferMemory;
 
         // Storage buffer stride of each element in bytes.
         unsigned int mStride;

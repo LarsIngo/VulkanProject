@@ -2,7 +2,7 @@
 
 #include <vector>
 #include "Particle.hpp"
-#include <d3d11.h>
+#include <vulkan/vulkan.h>
 
 class StorageSwapBuffer;
 class ParticleSystem;
@@ -13,10 +13,10 @@ class Scene
 
     public:
         // Constructor.
-        // pDevice Pointer to D3D11 device.
-        // pDeviceContext Pointer to D3D11 device context.
+        // device Vulkan device.
+        // physicalDevice Vulkan physical device.
         // maxParticleCount Max number of particles in scene.
-        Scene(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext, unsigned int maxParticleCount);
+        Scene(VkDevice device, VkPhysicalDevice physicalDevice, unsigned int maxParticleCount);
 
         // Destructor.
         ~Scene();
@@ -30,6 +30,6 @@ class Scene
         unsigned int mParticleCount;
         StorageSwapBuffer* mParticleBuffer;
 
-        ID3D11Device* mpDevice;
-        ID3D11DeviceContext* mpDeviceContext;
+        VkDevice mDevice;
+        VkPhysicalDevice mPhysicalDevice;
 };

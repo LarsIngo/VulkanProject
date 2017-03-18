@@ -32,12 +32,12 @@ class FrameBuffer
         // Frame buffer height in pixels.
         unsigned int mHeight;
 
-        // Color.
+        // Color image.
         VkImage mImage;
         VkImageView mImageView;
         VkFormat mFormat;
         VkImageLayout mImageLayout; 
-        VkDeviceMemory mDeviceMemory;
+        VkDeviceMemory mImageMemory;
 
     private:
         VkDevice mDevice;

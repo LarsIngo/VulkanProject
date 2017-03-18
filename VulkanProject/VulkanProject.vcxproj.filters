@@ -10,6 +10,12 @@
     <Filter Include="Scene">
       <UniqueIdentifier>{acc9ef97-6455-48df-9b8c-775053f4bbb7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="InputManager">
+      <UniqueIdentifier>{0e79f6a6-1eaf-4a65-a119-b09b2f95f036}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Particle">
+      <UniqueIdentifier>{385e92e9-3a3d-428b-bcfe-38f4b4c4ced7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
@@ -26,7 +32,19 @@
       <Filter>Scene</Filter>
     </ClCompile>
     <ClCompile Include="InputManager.cpp">
+      <Filter>InputManager</Filter>
+    </ClCompile>
+    <ClCompile Include="StorageBuffer.cpp">
+      <Filter>Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene.cpp">
       <Filter>Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="ParticleSystem.cpp">
+      <Filter>Particle</Filter>
+    </ClCompile>
+    <ClCompile Include="StorageSwapBuffer.cpp">
+      <Filter>Vulkan</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -46,7 +64,22 @@
       <Filter>Scene</Filter>
     </ClInclude>
     <ClInclude Include="InputManager.hpp">
+      <Filter>InputManager</Filter>
+    </ClInclude>
+    <ClInclude Include="StorageBuffer.hpp">
+      <Filter>Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene.hpp">
       <Filter>Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Particle.hpp">
+      <Filter>Particle</Filter>
+    </ClInclude>
+    <ClInclude Include="ParticleSystem.hpp">
+      <Filter>Particle</Filter>
+    </ClInclude>
+    <ClInclude Include="StorageSwapBuffer.hpp">
+      <Filter>Vulkan</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

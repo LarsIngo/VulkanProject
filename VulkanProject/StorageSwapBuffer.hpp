@@ -6,11 +6,11 @@ class StorageSwapBuffer
 {
     public:
         // Constructor.
-        // pDevice Pointer to D3D11 device.
-        // pDeviceContext Pointer to D3D11 device context.
+        // device Vulkan device.
+        // physicalDevice Vulkan physical device.
         // totalSize Total size in bytes.
         // stride Stride of each element in bytes.
-        StorageSwapBuffer(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext, unsigned int totalSize, unsigned int stride);
+        StorageSwapBuffer(VkDevice device, VkPhysicalDevice physicalDevice, unsigned int totalSize, unsigned int stride);
 
         // Destructor.
         ~StorageSwapBuffer();

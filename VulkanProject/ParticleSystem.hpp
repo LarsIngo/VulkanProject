@@ -1,6 +1,6 @@
 #pragma once
 
-#include <d3d11.h>
+#include <vulkan/vulkan.h>
 #include <glm/glm.hpp>
 
 class Scene;
@@ -12,9 +12,9 @@ class ParticleSystem
 {
     public:
         // Constructor.
-        // pDevice Pointer to D3D11 device.
-        // pDeviceContext Pointer to D3D11 device context.
-        ParticleSystem(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext);
+        // device Vulkan device.
+        // physicalDevice Vulkan physical device.
+        ParticleSystem(VkDevice device, VkPhysicalDevice physicalDevice);
 
         // Destructor.
         ~ParticleSystem();
@@ -30,10 +30,10 @@ class ParticleSystem
         void Render(Scene* scene, Camera* camera);
 
     private:
-        ID3D11Device* mpDevice;
-        ID3D11DeviceContext* mpDeviceContext;
+        VkDevice mDevice;
+        VkPhysicalDevice mPhysicalDevice;
 
-        ID3D11ComputeShader* mComputeShader;
+        /*ID3D11ComputeShader* mComputeShader;
 
         ID3D11VertexShader* mVertexShader;
         ID3D11GeometryShader* mGeometryShader;
@@ -55,5 +55,5 @@ class ParticleSystem
             glm::vec3 lensUpDirection;
             float pad[6];
         } mRenderMetaData;
-        ID3D11ShaderResourceView* mRenderMetaDataBuffer;
+        ID3D11ShaderResourceView* mRenderMetaDataBuffer;*/
 };

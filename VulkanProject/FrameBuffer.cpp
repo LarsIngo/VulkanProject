@@ -9,7 +9,7 @@ FrameBuffer::FrameBuffer(VkDevice device, VkPhysicalDevice physicalDevice, unsig
     mWidth = width;
     mHeight = height;
 
-    mDeviceMemory = VK_NULL_HANDLE;
+    mImageMemory = VK_NULL_HANDLE;
     mImage = initImage;
     mImageView = VK_NULL_HANDLE;
     mFormat = format;
@@ -20,7 +20,7 @@ FrameBuffer::FrameBuffer(VkDevice device, VkPhysicalDevice physicalDevice, unsig
     {   // Allocate device memory and create image.
         vkTools::CreateImage(mDevice, mPhysicalDevice, mWidth, mHeight,
             mFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, mImage, mDeviceMemory);
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, mImage, mImageMemory);
     }
 
     vkTools::CreateImageView(mDevice, mImage, mFormat, VK_IMAGE_ASPECT_COLOR_BIT, mImageView);
@@ -30,7 +30,7 @@ FrameBuffer::~FrameBuffer()
 {
     if (mMyImage)
     {
-        vkFreeMemory(mDevice, mDeviceMemory, nullptr);
+        vkFreeMemory(mDevice, mImageMemory, nullptr);
         vkDestroyImage(mDevice, mImage, nullptr);
     }
     vkDestroyImageView(mDevice, mImageView, nullptr);

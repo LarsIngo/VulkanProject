@@ -116,6 +116,7 @@ void vkTools::CreateRenderPass( const VkDevice& device, const VkFormat& format, 
     VkErrorCheck( vkCreateRenderPass( device, &render_pass_info, nullptr, &render_pass ) );
 }
 
+
 void vkTools::CreateFramebuffer( const VkDevice& device, const VkExtent2D extent, const VkRenderPass& render_pass, const VkImageView& color_image_view, const VkImageView& depth_image_view, VkFramebuffer& framebuffer )
 {
     std::vector<VkImageView> attachment_list = { color_image_view, depth_image_view  };
@@ -281,7 +282,6 @@ uint32_t vkTools::FindComputeFamilyIndex(const VkPhysicalDevice& gpu)
 }
 
 
-
 uint32_t vkTools::FindPresentFamilyIndex( const VkPhysicalDevice& gpu, const VkSurfaceKHR& surface )
 {
     uint32_t queue_family_count = 0;
@@ -316,6 +316,7 @@ uint32_t vkTools::FindMemoryType( const VkPhysicalDevice& gpu, const uint32_t& t
     return 0;
 }
 
+
 VkFormat vkTools::FindSupportedFormat( const VkPhysicalDevice& gpu, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features )
 {
     for (VkFormat format : candidates) {
@@ -333,6 +334,7 @@ VkFormat vkTools::FindSupportedFormat( const VkPhysicalDevice& gpu, const std::v
 
     return VK_FORMAT_UNDEFINED;
 }
+
 
 void vkTools::TransitionImageLayout(const VkCommandBuffer& command_buffer, VkImage image, VkFormat format, VkImageLayout old_layout, VkImageLayout new_layout)
 {
@@ -418,6 +420,7 @@ void vkTools::TransitionImageLayout(const VkCommandBuffer& command_buffer, VkIma
     );
 }
 
+
 void vkTools::CopyImage(const VkCommandBuffer& command_buffer, VkImage src_image, VkImage dst_image, std::uint32_t width, std::uint32_t height)
 {
     VkImageSubresourceLayers subresource = {};
@@ -477,6 +480,7 @@ void vkTools::CreateImage(const VkDevice& device, const VkPhysicalDevice& gpu, s
     vkBindImageMemory(device, image, image_memory, 0);
 }
 
+
 void vkTools::CreateImageView(const VkDevice& device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, VkImageView& image_view)
 {
     VkImageViewCreateInfo view_info = {};
@@ -492,6 +496,42 @@ void vkTools::CreateImageView(const VkDevice& device, VkImage image, VkFormat fo
 
     VkErrorCheck(vkCreateImageView(device, &view_info, nullptr, &image_view));
 }
+
+
+void vkTools::CreateBuffer( const VkDevice& device, const VkPhysicalDevice& physical_device, std::size_t total_size, VkBufferUsageFlags buffer_usage_flags, VkMemoryPropertyFlags memory_property_flags, VkBuffer& buffer, VkDeviceMemory& buffer_memory, uint32_t& min_offset_alignment )
+{
+    VkPhysicalDeviceProperties physical_device_proterties;
+    vkGetPhysicalDeviceProperties(physical_device, &physical_device_proterties);
+
+    if (buffer_usage_flags & VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
+        min_offset_alignment = physical_device_proterties.limits.minUniformBufferOffsetAlignment;
+    else if (buffer_usage_flags & VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)
+        min_offset_alignment = physical_device_proterties.limits.minStorageBufferOffsetAlignment;
+    else
+        MsgAssert(1, 0, "Vulkan runtime error. VKERROR: Unsupported buffer type.");
+
+    VkBufferCreateInfo buffer_create_info = {};
+    buffer_create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    buffer_create_info.size = total_size;
+    buffer_create_info.usage = buffer_usage_flags;
+    buffer_create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    vkTools::VkErrorCheck(vkCreateBuffer(device, &buffer_create_info, nullptr, &buffer));
+
+    {
+        VkMemoryRequirements memory_requirements;
+        vkGetBufferMemoryRequirements(device, buffer, &memory_requirements);
+
+        VkMemoryAllocateInfo memory_allocate_info = {};
+        memory_allocate_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        memory_allocate_info.allocationSize = memory_requirements.size;
+        memory_allocate_info.memoryTypeIndex = vkTools::FindMemoryType(physical_device, memory_requirements.memoryTypeBits, memory_property_flags);
+
+        vkTools::VkErrorCheck(vkAllocateMemory(device, &memory_allocate_info, nullptr, &buffer_memory));
+    }
+
+    vkTools::VkErrorCheck(vkBindBufferMemory(device, buffer, buffer_memory, 0));
+}
+
 
 VkCommandBuffer vkTools::BeginSingleTimeCommand( const VkDevice& device, const VkCommandPool& command_pool ) {
     VkCommandBufferAllocateInfo command_buffer_allocate_info = {};
@@ -512,6 +552,7 @@ VkCommandBuffer vkTools::BeginSingleTimeCommand( const VkDevice& device, const V
     return command_buffer;
 }
 
+
 void vkTools::EndSingleTimeCommand( const VkDevice& device, const VkCommandPool& command_pool, const VkQueue& queue, const VkCommandBuffer& command_buffer ) {
     VkErrorCheck( vkEndCommandBuffer( command_buffer ) );
 
@@ -526,6 +567,7 @@ void vkTools::EndSingleTimeCommand( const VkDevice& device, const VkCommandPool&
     vkFreeCommandBuffers( device, command_pool, 1, &command_buffer );
 }
 
+
 void vkTools::CreateCommandBuffer(const VkDevice& device, const VkCommandPool& command_pool, const VkCommandBufferLevel command_buffer_level, VkCommandBuffer& command_buffer)
 {
     VkCommandBufferAllocateInfo command_buffer_allocate_info = {};
@@ -537,6 +579,7 @@ void vkTools::CreateCommandBuffer(const VkDevice& device, const VkCommandPool& c
     VkErrorCheck(vkAllocateCommandBuffers(device, &command_buffer_allocate_info, &command_buffer));
 }
 
+
 void vkTools::BeginCommandBuffer( const VkCommandBufferUsageFlags command_buffer_useage_flags, const VkCommandBuffer& command_buffer ) {
     VkCommandBufferBeginInfo command_buffer_begin_info = {};
     command_buffer_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -544,6 +587,7 @@ void vkTools::BeginCommandBuffer( const VkCommandBufferUsageFlags command_buffer
 
     VkErrorCheck(vkBeginCommandBuffer(command_buffer, &command_buffer_begin_info));
 }
+
 
 void vkTools::BeginCommandBuffer(const VkCommandBufferUsageFlags command_buffer_useage_flags, const VkCommandBufferInheritanceInfo command_buffer_inheritance_info, const VkCommandBuffer& command_buffer) {
     VkCommandBufferBeginInfo command_buffer_begin_info = {};
@@ -559,6 +603,7 @@ void vkTools::EndCommandBuffer( const VkCommandBuffer& command_buffer ) {
     VkErrorCheck(vkEndCommandBuffer(command_buffer));
 }
 
+
 void vkTools::SubmitCommandBuffer( const VkQueue& queue, VkCommandBuffer& command_buffer ) {
     VkSubmitInfo submitInfo = {};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -569,17 +614,21 @@ void vkTools::SubmitCommandBuffer( const VkQueue& queue, VkCommandBuffer& comman
     //VkErrorCheck(vkQueueWaitIdle(queue));
 }
 
+
 void vkTools::WaitQueue( const VkQueue& queue ) {
     VkErrorCheck(vkQueueWaitIdle(queue));
 }
+
 
 void vkTools::ResetCommandBuffer( VkCommandBuffer& command_buffer ) {
     vkResetCommandBuffer(command_buffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
 }
 
+
 void vkTools::FreeCommandBuffer( const VkDevice& device, const VkCommandPool& command_pool, const VkCommandBuffer& command_buffer ) {
     vkFreeCommandBuffers(device, command_pool, 1, &command_buffer);
 }
+
 
 #ifdef BUILD_ENABLE_VULKAN_RUNTIME_DEBUG
 

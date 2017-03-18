@@ -157,6 +157,11 @@
     <ClInclude Include="CPUTimer.hpp" />
     <ClInclude Include="FrameBuffer.hpp" />
     <ClInclude Include="InputManager.hpp" />
+    <ClInclude Include="Particle.hpp" />
+    <ClInclude Include="ParticleSystem.hpp" />
+    <ClInclude Include="Scene.hpp" />
+    <ClInclude Include="StorageBuffer.hpp" />
+    <ClInclude Include="StorageSwapBuffer.hpp" />
     <ClInclude Include="VkRenderer.hpp" />
     <ClInclude Include="vkTools.hpp" />
   </ItemGroup>
@@ -165,6 +170,10 @@
     <ClCompile Include="FrameBuffer.cpp" />
     <ClCompile Include="InputManager.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="ParticleSystem.cpp" />
+    <ClCompile Include="Scene.cpp" />
+    <ClCompile Include="StorageBuffer.cpp" />
+    <ClCompile Include="StorageSwapBuffer.cpp" />
     <ClCompile Include="VkRenderer.cpp" />
     <ClCompile Include="vkTools.cpp" />
   </ItemGroup>
