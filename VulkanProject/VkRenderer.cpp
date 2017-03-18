@@ -40,6 +40,42 @@ void VkRenderer::Close()
     mClose = true;
 }
 
+FrameBuffer* VkRenderer::SwapBackBuffer()
+{
+    vkTools::VkErrorCheck(vkAcquireNextImageKHR(mDevice, mSwapchainKHR, (std::numeric_limits<uint64_t>::max)(), mPresentCompleteSemaphore, VK_NULL_HANDLE, &mActiveSwapchainImageIndex));
+    assert(mActiveSwapchainImageIndex <= mSwapchainFrameBufferList.size());
+
+    return mSwapchainFrameBufferList[mActiveSwapchainImageIndex];
+}
+
+void VkRenderer::PresentBackBuffer()
+{
+    VkSubmitInfo submitInfo;
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.pNext = NULL;
+    submitInfo.pWaitDstStageMask = 0;
+    submitInfo.commandBufferCount = 0;
+    submitInfo.waitSemaphoreCount = 0;
+    VkSemaphore signalSemaphores[] = { mGraphicsCompleteSemaphore };
+    submitInfo.pSignalSemaphores = signalSemaphores;
+    submitInfo.signalSemaphoreCount = 1;
+
+    vkTools::VkErrorCheck(vkQueueSubmit(mGraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE));
+
+    VkPresentInfoKHR presentInfoKHR;
+    presentInfoKHR.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    presentInfoKHR.pNext = NULL;
+    presentInfoKHR.pResults = NULL;
+    VkSemaphore waitSemaphores[] = { mPresentCompleteSemaphore, mGraphicsCompleteSemaphore };
+    presentInfoKHR.pWaitSemaphores = waitSemaphores;
+    presentInfoKHR.waitSemaphoreCount = 2;
+    VkSwapchainKHR swapchains[] = { mSwapchainKHR };
+    presentInfoKHR.pSwapchains = swapchains;
+    presentInfoKHR.swapchainCount = 1;
+    presentInfoKHR.pImageIndices = &mActiveSwapchainImageIndex;
+    vkQueuePresentKHR(mPresentQueue, &presentInfoKHR);
+}
+
 void VkRenderer::InitialiseGLFW()
 {
     /* Initialize the library */
@@ -69,12 +105,24 @@ void VkRenderer::InitialiseVulkan()
 {
     InitialiseInstance();
     InitialiseDevice();
+    InitialiseSurfaceKHR();
+    InitialiseQueues();
+    InitialiseSwapchainKHR();
+    InitialiseCommandPool();
+    InitialiseSemaphores();
+    InitialiseSwapchanFrameBuffers();
 }
 
 void VkRenderer::DeInitialiseVulkan()
 {
     vkDeviceWaitIdle(mDevice);
 
+    DeInitialiseSwapchanFrameBuffers();
+    DeInitialiseSemaphores();
+    DeInitialiseCommandPool();
+    DeInitialiseSwapchainKHR();
+    DeInitialiseQueues();
+    DeInitialiseSurfaceKHR();
     DeInitialiseDevice();
     DeInitialiseInstance();
 }
@@ -184,6 +232,38 @@ void VkRenderer::DeInitialiseInstance()
     vkDestroyInstance(mInstance, nullptr);
 }
 
+void VkRenderer::InitialiseSurfaceKHR()
+{
+    vkTools::VkErrorCheck(glfwCreateWindowSurface(mInstance, mGLFWwindow, nullptr, &mSurfaceKHR));
+
+    uint32_t surfaceCount = 0;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(mPhysicalDevice, mSurfaceKHR, &surfaceCount, nullptr);
+    if (surfaceCount == 0) {
+        assert(0 && "VULKANERROR: Surface format missing.");
+        std::exit(-1);
+    }
+    std::vector<VkSurfaceFormatKHR> surfaceFormatKHRList(surfaceCount);
+    vkGetPhysicalDeviceSurfaceFormatsKHR(mPhysicalDevice, mSurfaceKHR, &surfaceCount, surfaceFormatKHRList.data());
+    if (surfaceFormatKHRList[0].format == VK_FORMAT_UNDEFINED) {
+        mSurfaceFormatKHR.format = VK_FORMAT_B8G8R8A8_UNORM;
+        mSurfaceFormatKHR.colorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
+    }
+    else {
+        mSurfaceFormatKHR = surfaceFormatKHRList[0];
+    }
+
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(mPhysicalDevice, mSurfaceKHR, &mSurfaceCapabilitiesKHR);
+    if (mSurfaceCapabilitiesKHR.currentExtent.width < UINT32_MAX) {
+        mSurfaceExtent.width = mSurfaceCapabilitiesKHR.currentExtent.width;
+        mSurfaceExtent.height = mSurfaceCapabilitiesKHR.currentExtent.height;
+    }
+}
+
+void VkRenderer::DeInitialiseSurfaceKHR()
+{
+    vkDestroySurfaceKHR(mInstance, mSurfaceKHR, nullptr);
+}
+
 void VkRenderer::InitialiseDevice()
 {
     {
@@ -199,13 +279,15 @@ void VkRenderer::InitialiseDevice()
     std::vector<const char*> enabledExtensionList = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
     mGraphicsFamilyIndex = vkTools::FindGraphicsFamilyIndex(mPhysicalDevice);
+    mComputeFamilyIndex = vkTools::FindComputeFamilyIndex(mPhysicalDevice);
+    assert(mGraphicsFamilyIndex == mComputeFamilyIndex);
 
     float queuePriorities{ 1.f };
     VkDeviceQueueCreateInfo deviceQueueCreateInfo;
     deviceQueueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
     deviceQueueCreateInfo.queueCount = 1;
-    deviceQueueCreateInfo.queueFamilyIndex = mGraphicsFamilyIndex;
     deviceQueueCreateInfo.pQueuePriorities = &queuePriorities;
+    deviceQueueCreateInfo.queueFamilyIndex = mGraphicsFamilyIndex;
     deviceQueueCreateInfo.pNext = NULL;
     deviceQueueCreateInfo.flags = 0;
 
@@ -222,12 +304,151 @@ void VkRenderer::InitialiseDevice()
     deviceCreateInfo.flags = 0;
 
     vkTools::VkErrorCheck(vkCreateDevice(mPhysicalDevice, &deviceCreateInfo, nullptr, &mDevice));
-
-    vkGetDeviceQueue(mDevice, mGraphicsFamilyIndex, 0, &mGraphicsQueue);
 }
 
 void VkRenderer::DeInitialiseDevice()
 {
     vkDestroyDevice(mDevice, nullptr);
+}
+
+void VkRenderer::InitialiseQueues()
+{
+    mPresentFamilyIndex = vkTools::FindPresentFamilyIndex(mPhysicalDevice, mSurfaceKHR);
+
+    vkGetDeviceQueue(mDevice, mGraphicsFamilyIndex, 0, &mGraphicsQueue);
+    vkGetDeviceQueue(mDevice, mComputeFamilyIndex, 0, &mComputeQueue);
+    vkGetDeviceQueue(mDevice, mPresentFamilyIndex, 0, &mPresentQueue);
+}
+
+void VkRenderer::DeInitialiseQueues()
+{
+
+}
+
+void VkRenderer::InitialiseSwapchainKHR()
+{
+    uint32_t swapchainImageCount = 0;
+    if (swapchainImageCount < mSurfaceCapabilitiesKHR.minImageCount + 1)
+        swapchainImageCount = mSurfaceCapabilitiesKHR.minImageCount + 1;
+    if (mSurfaceCapabilitiesKHR.maxImageCount > 0)
+        if (swapchainImageCount > mSurfaceCapabilitiesKHR.maxImageCount)
+            swapchainImageCount = mSurfaceCapabilitiesKHR.maxImageCount;
+    mSwapchainFrameBufferList.resize(swapchainImageCount);
+
+    VkPresentModeKHR present_mode = VK_PRESENT_MODE_FIFO_KHR;
+    {
+        uint32_t presentModeCount = 0;
+        vkGetPhysicalDeviceSurfacePresentModesKHR(mPhysicalDevice, mSurfaceKHR, &presentModeCount, nullptr);
+        std::vector<VkPresentModeKHR> presentModeList(presentModeCount);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(mPhysicalDevice, mSurfaceKHR, &presentModeCount, presentModeList.data());
+        for (auto m : presentModeList)
+            if (m == VK_PRESENT_MODE_MAILBOX_KHR)
+                present_mode = m;
+    }
+
+    VkSwapchainCreateInfoKHR swapchainCreateInfoKHR;
+    swapchainCreateInfoKHR.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+    swapchainCreateInfoKHR.surface = mSurfaceKHR;
+    swapchainCreateInfoKHR.minImageCount = swapchainImageCount;
+    swapchainCreateInfoKHR.imageFormat = mSurfaceFormatKHR.format;
+    swapchainCreateInfoKHR.imageColorSpace = mSurfaceFormatKHR.colorSpace;
+    swapchainCreateInfoKHR.imageExtent.width = mSurfaceExtent.width;
+    swapchainCreateInfoKHR.imageExtent.height = mSurfaceExtent.height;
+    swapchainCreateInfoKHR.imageArrayLayers = 1;
+    swapchainCreateInfoKHR.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT; //VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+
+    uint32_t queueFamilyIndices[] = { mGraphicsFamilyIndex, mPresentFamilyIndex };
+    if (mGraphicsFamilyIndex != mPresentFamilyIndex) {
+        swapchainCreateInfoKHR.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+        swapchainCreateInfoKHR.queueFamilyIndexCount = 2;
+        swapchainCreateInfoKHR.pQueueFamilyIndices = queueFamilyIndices;
+    }
+    else {
+        swapchainCreateInfoKHR.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE; // (SLI), several queue families render to same swap chain OR have one queue render and another present 
+        swapchainCreateInfoKHR.queueFamilyIndexCount = 0; // Not used if VK_SHARING_MODE_EXCLUSIVE
+        swapchainCreateInfoKHR.pQueueFamilyIndices = nullptr; // Not used if VK_SHARING_MODE_EXCLUSIVE
+    }
+
+    swapchainCreateInfoKHR.preTransform = mSurfaceCapabilitiesKHR.currentTransform;
+    swapchainCreateInfoKHR.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+    swapchainCreateInfoKHR.presentMode = present_mode;
+    swapchainCreateInfoKHR.clipped = VK_TRUE;
+
+    swapchainCreateInfoKHR.pNext = 0;
+    swapchainCreateInfoKHR.flags = 0;
+
+    VkSwapchainKHR oldSwapchainKHR = mSwapchainKHR;
+    swapchainCreateInfoKHR.oldSwapchain = oldSwapchainKHR;
+
+    VkSwapchainKHR newSwapchainKHR = VK_NULL_HANDLE;
+    vkTools::VkErrorCheck(vkCreateSwapchainKHR(mDevice, &swapchainCreateInfoKHR, nullptr, &newSwapchainKHR));
+
+    mSwapchainKHR = newSwapchainKHR;
+
+    vkTools::VkErrorCheck(vkGetSwapchainImagesKHR(mDevice, mSwapchainKHR, &swapchainImageCount, nullptr));
+
+    vkGetDeviceQueue(mDevice, mPresentFamilyIndex, 0, &mPresentQueue);
+}
+
+void VkRenderer::DeInitialiseSwapchainKHR()
+{
+    vkDestroySwapchainKHR(mDevice, mSwapchainKHR, nullptr);
+}
+
+void VkRenderer::InitialiseCommandPool()
+{
+    VkCommandPoolCreateInfo commandPoolCreateInfo;
+    commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    commandPoolCreateInfo.pNext = NULL;
+
+    commandPoolCreateInfo.queueFamilyIndex = mGraphicsFamilyIndex;
+    vkTools::VkErrorCheck(vkCreateCommandPool(mDevice, &commandPoolCreateInfo, nullptr, &mGraphicsCommandPool));
+
+    commandPoolCreateInfo.queueFamilyIndex = mComputeFamilyIndex;
+    vkTools::VkErrorCheck(vkCreateCommandPool(mDevice, &commandPoolCreateInfo, nullptr, &mComputeCommandPool));
+}
+
+void VkRenderer::DeInitialiseCommandPool()
+{
+    vkDestroyCommandPool(mDevice, mGraphicsCommandPool, nullptr);
+    vkDestroyCommandPool(mDevice, mComputeCommandPool, nullptr);
+}
+
+void VkRenderer::InitialiseSemaphores()
+{
+    VkSemaphoreCreateInfo semaphoreCreateInfo;
+    semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+    semaphoreCreateInfo.pNext = NULL;
+    semaphoreCreateInfo.flags = 0;
+
+    vkTools::VkErrorCheck(vkCreateSemaphore(mDevice, &semaphoreCreateInfo, nullptr, &mGraphicsCompleteSemaphore));
+    vkTools::VkErrorCheck(vkCreateSemaphore(mDevice, &semaphoreCreateInfo, nullptr, &mComputeCompleteSemaphore));
+    vkTools::VkErrorCheck(vkCreateSemaphore(mDevice, &semaphoreCreateInfo, nullptr, &mPresentCompleteSemaphore));
+}
+
+void VkRenderer::DeInitialiseSemaphores()
+{
+    vkDestroySemaphore(mDevice, mGraphicsCompleteSemaphore, nullptr);
+    vkDestroySemaphore(mDevice, mComputeCompleteSemaphore, nullptr);
+    vkDestroySemaphore(mDevice, mPresentCompleteSemaphore, nullptr);
+}
+
+void VkRenderer::InitialiseSwapchanFrameBuffers()
+{
+    std::vector<VkImage> swapchainImageList;
+    swapchainImageList.resize(mSwapchainFrameBufferList.size());
+
+    uint32_t swapchainImageCount = static_cast<uint32_t>(mSwapchainFrameBufferList.size());
+    vkTools::VkErrorCheck(vkGetSwapchainImagesKHR(mDevice, mSwapchainKHR, &swapchainImageCount, swapchainImageList.data()));
+
+    for (std::size_t i = 0; i < mSwapchainFrameBufferList.size(); ++i)
+        mSwapchainFrameBufferList[i] = new FrameBuffer(mDevice, mPhysicalDevice, mWinWidth, mWinHeight, mSurfaceFormatKHR.format, swapchainImageList[i]);
+}
+
+void VkRenderer::DeInitialiseSwapchanFrameBuffers()
+{
+    for (std::size_t i = 0; i < mSwapchainFrameBufferList.size(); ++i)
+        delete mSwapchainFrameBufferList[i];
 }
 

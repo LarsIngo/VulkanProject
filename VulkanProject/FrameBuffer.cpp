@@ -1,89 +1,78 @@
 #include "FrameBuffer.hpp"
-#include "DxHelp.hpp"
+#include "vkTools.hpp"
+#include <assert.h>
 
-FrameBuffer::FrameBuffer(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext, unsigned int width, unsigned int height, UINT bindFlags, UINT miscFlags, ID3D11Texture2D* initTexture)
+FrameBuffer::FrameBuffer(VkDevice device, VkPhysicalDevice physicalDevice, unsigned int width, unsigned int height, VkFormat format, VkImage initImage)
 {
-    mpDevice = pDevice;
-    mpDeviceContext = pDeviceContext;
+    mDevice = device;
+    mPhysicalDevice = physicalDevice;
     mWidth = width;
     mHeight = height;
 
-    mColTex = nullptr;
-    mColSRV = nullptr;
-    mColRTV = nullptr;
-    mColUAV = nullptr;
+    mDeviceMemory = VK_NULL_HANDLE;
+    mImage = initImage;
+    mImageView = VK_NULL_HANDLE;
+    mFormat = format;
+    mImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-    //mDepthStencilTex = nullptr;
-    //mDepthStencilDSV = nullptr;
+    mMyImage = initImage == VK_NULL_HANDLE;
+    if (mMyImage)
+    {   // Allocate device memory and create image.
+        vkTools::CreateImage(mDevice, mPhysicalDevice, mWidth, mHeight,
+            mFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, mImage, mDeviceMemory);
+    }
 
-    D3D11_TEXTURE2D_DESC texDesc;
-    ZeroMemory(&texDesc, sizeof(D3D11_TEXTURE2D_DESC));
-    texDesc.Width = mWidth;
-    texDesc.Height = mHeight;
-    texDesc.MipLevels = 1;
-    texDesc.ArraySize = 1;
-    texDesc.SampleDesc.Count = 1;
-    texDesc.SampleDesc.Quality = 0;
-    texDesc.Usage = D3D11_USAGE_DEFAULT;
-    texDesc.CPUAccessFlags = 0;
-    texDesc.MiscFlags = miscFlags;
-
-    // Color.
-    texDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-    texDesc.BindFlags = bindFlags;
-    if (initTexture == nullptr) { DxAssert(mpDevice->CreateTexture2D(&texDesc, NULL, &mColTex), S_OK); } else mColTex = initTexture;
-    if (texDesc.BindFlags & D3D11_BIND_SHADER_RESOURCE) DxAssert(mpDevice->CreateShaderResourceView(mColTex, NULL, &mColSRV), S_OK);
-    if (texDesc.BindFlags & D3D11_BIND_RENDER_TARGET) DxAssert(mpDevice->CreateRenderTargetView(mColTex, NULL, &mColRTV), S_OK);
-    if (texDesc.BindFlags & D3D11_BIND_UNORDERED_ACCESS) DxAssert(mpDevice->CreateUnorderedAccessView(mColTex, NULL, &mColUAV), S_OK);
-    // Generate mip levels.
-    if (miscFlags == D3D11_RESOURCE_MISC_GENERATE_MIPS)
-        mpDeviceContext->GenerateMips(mColSRV);
-    // Get desc info.
-    D3D11_TEXTURE2D_DESC desc;
-    mColTex->GetDesc(&desc);
-    mMipLevels = desc.MipLevels;
-
-    // Depth stencil.
-    //texDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;
-    //texDesc.BindFlags = texDesc.BindFlags & D3D11_BIND_SHADER_RESOURCE ? D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE : D3D11_BIND_DEPTH_STENCIL;
-    //DxAssert(mpDevice->CreateTexture2D(&texDesc, NULL, &mDepthStencilTex), S_OK);
-    //D3D11_DEPTH_STENCIL_VIEW_DESC depthDesc;
-    //ZeroMemory(&depthDesc, sizeof(D3D11_DEPTH_STENCIL_VIEW_DESC));
-    //depthDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-    //depthDesc.Flags = 0;
-    //depthDesc.Texture2D.MipSlice = 0;
-    //depthDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
-    //DxAssert(mpDevice->CreateDepthStencilView(mDepthStencilTex, &depthDesc, &mDepthStencilDSV), S_OK);
+    vkTools::CreateImageView(mDevice, mImage, mFormat, VK_IMAGE_ASPECT_COLOR_BIT, mImageView);
 }
 
 FrameBuffer::~FrameBuffer()
 {
-    if (mColTex != nullptr) mColTex->Release();
-    if (mColSRV != nullptr) mColSRV->Release();
-    if (mColRTV != nullptr) mColRTV->Release();
-    if (mColUAV != nullptr) mColUAV->Release();
-
-    //if (mDepthStencilTex != nullptr) mDepthStencilTex->Release();
-    //if (mDepthStencilDSV != nullptr) mDepthStencilDSV->Release();
+    if (mMyImage)
+    {
+        vkFreeMemory(mDevice, mDeviceMemory, nullptr);
+        vkDestroyImage(mDevice, mImage, nullptr);
+    }
+    vkDestroyImageView(mDevice, mImageView, nullptr);
 }
 
-void FrameBuffer::Clear(float r, float g, float b, float a, float depth)
+void FrameBuffer::Clear(VkCommandBuffer commandBuffer, float r, float g, float b, float a, float depth)
 {
-    float clrColor[4] = { r, g, b, a };
-    float clrWorld[4] = { 0.f, 0.f, 0.f, 0.f };
-    float clrNorm[4] = { 0.f, 0.f, 0.f, 0.f };
-    float clrDepth[4] = { 0.f, 0.f, 0.f, 0.f };
-    if (mColRTV != nullptr) mpDeviceContext->ClearRenderTargetView(mColRTV, clrColor);
-    //if (mDepthStencilDSV != nullptr) mpDeviceContext->ClearDepthStencilView(mDepthStencilDSV, D3D11_CLEAR_DEPTH, depth, 0);
+    TransitionImageLayout(commandBuffer, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+    VkClearColorValue clearColorValue;
+    clearColorValue.float32[0] = r;
+    clearColorValue.float32[1] = g;
+    clearColorValue.float32[2] = b;
+    clearColorValue.float32[3] = a;
+
+    VkImageSubresourceRange imageSubresourceRange;
+    imageSubresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    imageSubresourceRange.baseMipLevel = 0;
+    imageSubresourceRange.levelCount = 1;
+    imageSubresourceRange.baseArrayLayer = 0;
+    imageSubresourceRange.layerCount = 1;
+    
+    vkCmdClearColorImage(commandBuffer, mImage, mImageLayout, &clearColorValue, 1, &imageSubresourceRange);
 }
 
-void FrameBuffer::Copy(FrameBuffer* fb)
+void FrameBuffer::Copy(VkCommandBuffer commandBuffer, FrameBuffer* fb)
 {
     assert(fb != this);
 	assert(mWidth == fb->mWidth && mHeight == fb->mHeight);
-    assert(mMipLevels == fb->mMipLevels);
 
-    DxHelp::CopyTexture(mpDeviceContext, mColTex, fb->mColTex, mWidth, mHeight, mMipLevels);
+    fb->TransitionImageLayout(commandBuffer, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
-    //mpDeviceContext->CopyResource(mDepthStencilTex, fb->mDepthStencilTex);
+    TransitionImageLayout(commandBuffer, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+    vkTools::CopyImage(commandBuffer, fb->mImage, mImage, mWidth, mHeight);
+}
+
+void FrameBuffer::TransitionImageLayout(const VkCommandBuffer& commandBuffer, VkImageLayout newLayout)
+{
+    if (mImageLayout == newLayout)
+        return;
+
+    vkTools::TransitionImageLayout(commandBuffer, mImage, mFormat, mImageLayout, newLayout);
+    mImageLayout = newLayout;
 }

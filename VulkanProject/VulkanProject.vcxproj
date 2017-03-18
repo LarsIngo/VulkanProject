@@ -153,11 +153,17 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Camera.hpp" />
     <ClInclude Include="CPUTimer.hpp" />
+    <ClInclude Include="FrameBuffer.hpp" />
+    <ClInclude Include="InputManager.hpp" />
     <ClInclude Include="VkRenderer.hpp" />
     <ClInclude Include="vkTools.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="FrameBuffer.cpp" />
+    <ClCompile Include="InputManager.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="VkRenderer.cpp" />
     <ClCompile Include="vkTools.cpp" />

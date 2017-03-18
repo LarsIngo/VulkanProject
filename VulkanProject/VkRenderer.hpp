@@ -8,6 +8,7 @@
 #include <GLFW/glfw3.h>
 
 #include <vector>
+#include "FrameBuffer.hpp"
 
 class VkRenderer
 {
@@ -26,6 +27,13 @@ class VkRenderer
         // Close window.
         void Close();
 
+        // Swap back buffer.
+        // Returns next active frame buffer to present to window.
+        FrameBuffer* SwapBackBuffer();
+
+        // Present active back buffer.
+        void PresentBackBuffer();
+
         // GLFW window.
         GLFWwindow* mGLFWwindow;
 
@@ -36,20 +44,27 @@ class VkRenderer
         VkPhysicalDeviceProperties mPhysicalDeviceProperties;
         VkPhysicalDeviceFeatures mPhysicalDeviceFeatures;
 
-        uint32_t mGraphicsFamilyIndex;
-        uint32_t mComputeFamilyIndex;
         uint32_t mPresentFamilyIndex;
+        VkQueue mPresentQueue;
+
+        uint32_t mGraphicsFamilyIndex;
+        VkCommandPool mGraphicsCommandPool;
         VkQueue mGraphicsQueue;
+
+        uint32_t mComputeFamilyIndex;
+        VkCommandPool mComputeCommandPool;
         VkQueue mComputeQueue;
 
-        VkCommandPool mCommandPool;
-
         VkSurfaceKHR mSurfaceKHR;
-        VkSurfaceCapabilitiesKHR mSurfaceCapabilitiesKHR;
         VkSurfaceFormatKHR mSurfaceFormatKHR;
+        VkSurfaceCapabilitiesKHR mSurfaceCapabilitiesKHR;
+        VkExtent2D mSurfaceExtent;
 
         VkSwapchainKHR mSwapchainKHR;
+        std::vector<FrameBuffer*> mSwapchainFrameBufferList;
 
+        VkSemaphore mGraphicsCompleteSemaphore;
+        VkSemaphore mComputeCompleteSemaphore;
         VkSemaphore mPresentCompleteSemaphore;
 
     private:
@@ -62,8 +77,26 @@ class VkRenderer
         void InitialiseInstance();
         void DeInitialiseInstance();
 
+        void InitialiseSurfaceKHR();
+        void DeInitialiseSurfaceKHR();
+
         void InitialiseDevice();
         void DeInitialiseDevice();
+
+        void InitialiseQueues();
+        void DeInitialiseQueues();
+
+        void InitialiseSwapchainKHR();
+        void DeInitialiseSwapchainKHR();
+
+        void InitialiseCommandPool();
+        void DeInitialiseCommandPool();
+
+        void InitialiseSemaphores();
+        void DeInitialiseSemaphores();
+
+        void InitialiseSwapchanFrameBuffers();
+        void DeInitialiseSwapchanFrameBuffers();
         
 #ifdef BUILD_ENABLE_VULKAN_DEBUG
         VkDebugReportCallbackEXT mDebugReportCallbackEXT;
@@ -75,4 +108,5 @@ class VkRenderer
         unsigned int mWinWidth;
         unsigned int mWinHeight;
         bool mClose;
+        uint32_t mActiveSwapchainImageIndex;
 };

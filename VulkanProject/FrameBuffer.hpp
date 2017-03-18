@@ -1,48 +1,46 @@
 #pragma once
 
-#include <d3d11.h>
-#include <glm/glm.hpp>
+#include <vulkan/vulkan.h>
 
 class FrameBuffer
 {
     public:
         // Constructor.
-        // pDevice Pointer to D3D11 device.
-        // pDeviceContext Pointer to D3D11 device context.
+        // device Vulkan device.
+        // physicalDevice Vulkan physical device.
         // width Width in pixels.
         // height Height in pixels.
-        // bindFlags Bind flags. DEFAULT [D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET | D3D11_BIND_UNORDERED_ACCESS]
-		// miscFlags Misc flags. DEFAULT [0]
-        // initTexture Texture make frame buffer. DEFAULT [nullptr]
-        FrameBuffer(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext, unsigned int width, unsigned int height, UINT bindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET | D3D11_BIND_UNORDERED_ACCESS, UINT miscFlags = 0, ID3D11Texture2D* initTexture = nullptr);
+        // initTexture Initialised image. DEFAULT [VK_NULL_HANDLE]
+        FrameBuffer(VkDevice device, VkPhysicalDevice physicalDevice, unsigned int width, unsigned int height, VkFormat format, VkImage initTexture = VK_NULL_HANDLE);
 
         // Destructor.
         ~FrameBuffer();
 
-        // Clear textures.
-        void Clear(float r = 0.f, float g = 0.f, float b = 0.f, float a = 0.f, float depth = 1.f);
+        // Clear image.
+        void Clear(VkCommandBuffer commandBuffer, float r = 0.f, float g = 0.f, float b = 0.f, float a = 0.f, float depth = 1.f);
 
 		// Copy other frame buffer.
-		void Copy(FrameBuffer* fb);
+		void Copy(VkCommandBuffer commandBuffer, FrameBuffer* fb);
+
+        // Transition image layout.
+        // commandbuffer Command buffer to make transition
+        // newLayout Layout to transition to.
+        void TransitionImageLayout(const VkCommandBuffer& commandBuffer, VkImageLayout newLayout);
 
         // Frame buffer width in pixels.
         unsigned int mWidth;
         // Frame buffer height in pixels.
         unsigned int mHeight;
-		// Number of mip levels.
-		unsigned int mMipLevels;
 
         // Color.
-        ID3D11Texture2D* mColTex;
-        ID3D11ShaderResourceView* mColSRV;
-        ID3D11RenderTargetView* mColRTV;
-        ID3D11UnorderedAccessView* mColUAV;
-
-        // Depth stencil.
-        //ID3D11Texture2D* mDepthStencilTex;
-        //ID3D11DepthStencilView* mDepthStencilDSV;
+        VkImage mImage;
+        VkImageView mImageView;
+        VkFormat mFormat;
+        VkImageLayout mImageLayout; 
+        VkDeviceMemory mDeviceMemory;
 
     private:
-        ID3D11Device* mpDevice;
-        ID3D11DeviceContext* mpDeviceContext;
+        VkDevice mDevice;
+        VkPhysicalDevice mPhysicalDevice;
+        bool mMyImage;
 };

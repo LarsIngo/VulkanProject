@@ -1,5 +1,24 @@
 #pragma once
 
+#ifdef NDEBUG
+#ifdef _WIN32
+#include <Windows.h>
+#include <tchar.h>
+#define MsgAssert(x, y, msg) if (x != y) { MessageBox(NULL, _T(msg), _T("MsgAssert"), MB_OK); }
+#else
+#define MsgAssert(x, y, msg)  if (x != y) { exit(-1); }
+#endif // WIN32
+#else
+#include <assert.h>
+#ifdef _WIN32
+#include <Windows.h>
+#include <tchar.h>
+#define MsgAssert(x, y, msg) if (x != y) { MessageBox(NULL, _T(msg), _T("MsgAssert"), MB_OK); assert(x == y); }
+#else
+#define MsgAssert(x, y, msg) if (x != y) { assert(x == y && msg); }
+#endif // WIN32
+#endif // NDEBUG
+
 #include <vulkan/vulkan.h>
 
 #include <vector>

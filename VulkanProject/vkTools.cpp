@@ -258,8 +258,7 @@ uint32_t vkTools::FindGraphicsFamilyIndex( const VkPhysicalDevice& gpu )
         if ( queue_family_properties_list[ i ].queueCount > 0 && queue_family_properties_list[ i ].queueFlags & VK_QUEUE_GRAPHICS_BIT)
             return i;
 
-    std::cout << "Vulkan runtime error. VKERROR: Queue family supporting graphics not found." << std::endl;
-    exit(-1);
+    MsgAssert(1, 0, "Vulkan runtime error. VKERROR: Queue family supporting graphics not found.");
 
     return 0;
 }
@@ -276,8 +275,7 @@ uint32_t vkTools::FindComputeFamilyIndex(const VkPhysicalDevice& gpu)
         if (queue_family_properties_list[i].queueCount > 0 && queue_family_properties_list[i].queueFlags & VK_QUEUE_COMPUTE_BIT)
             return i;
 
-    std::cout << "Vulkan runtime error. VKERROR: Queue family supporting compute not found." << std::endl;
-    exit(-1);
+    MsgAssert(1, 0, "Vulkan runtime error. VKERROR: Queue family supporting compute not found.");
 
     return 0;
 }
@@ -297,9 +295,7 @@ uint32_t vkTools::FindPresentFamilyIndex( const VkPhysicalDevice& gpu, const VkS
         if ( queue_family_properties_list[ i ].queueCount > 0 && presentSupport )
             return i;
     }
-
-    std::cout << "Vulkan runtime error. VKERROR: Memory type not found." << std::endl;
-    exit(-1);
+    MsgAssert(1, 0, "Vulkan runtime error. VKERROR: Memory type not found.");
 
     return 0;
 }
@@ -315,9 +311,7 @@ uint32_t vkTools::FindMemoryType( const VkPhysicalDevice& gpu, const uint32_t& t
             return i;
         }
     }
-
-    std::cout << "Vulkan runtime error. VKERROR: Memory type not found." << std::endl;
-    exit(-1);
+    MsgAssert(1, 0, "Vulkan runtime error. VKERROR: Memory type not found.");
 
     return 0;
 }
@@ -335,15 +329,16 @@ VkFormat vkTools::FindSupportedFormat( const VkPhysicalDevice& gpu, const std::v
             return format;
         }
     }
-
-    std::cout << "Vulkan runtime error. VKERROR: Supported format not found." << std::endl;
-    exit(-1);
+    MsgAssert(1, 0, "Vulkan runtime error. VKERROR: Supported format not found.");
 
     return VK_FORMAT_UNDEFINED;
 }
 
 void vkTools::TransitionImageLayout(const VkCommandBuffer& command_buffer, VkImage image, VkFormat format, VkImageLayout old_layout, VkImageLayout new_layout)
 {
+    if (old_layout == new_layout)
+        return;
+
     VkImageMemoryBarrier barrier = {};
     barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
     barrier.oldLayout = old_layout;
@@ -368,6 +363,7 @@ void vkTools::TransitionImageLayout(const VkCommandBuffer& command_buffer, VkIma
     barrier.subresourceRange.baseArrayLayer = 0;
     barrier.subresourceRange.layerCount = 1;
 
+
     if (old_layout == VK_IMAGE_LAYOUT_PREINITIALIZED && new_layout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) {
         barrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
         barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
@@ -386,11 +382,30 @@ void vkTools::TransitionImageLayout(const VkCommandBuffer& command_buffer, VkIma
     }
     else if (old_layout == VK_IMAGE_LAYOUT_UNDEFINED && new_layout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR) {
         barrier.srcAccessMask = 0;
-        barrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;//VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        barrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+    }
+    else if (old_layout == VK_IMAGE_LAYOUT_UNDEFINED && new_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+        barrier.srcAccessMask = 0;
+        barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    }
+    else if (old_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && new_layout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) {
+        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+    }
+    else if (old_layout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL && new_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+        barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+        barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    }
+    else if (old_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && new_layout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR) {
+        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        barrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+    }
+    else if (old_layout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR && new_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+        barrier.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+        barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
     }
     else {
-        std::cout << "Vulkan runtime error. VKERROR: Unsupported layout transition" << std::endl;
-        exit(-1);
+        MsgAssert(1,0, "Vulkan runtime error. VKERROR: Unsupported layout transition.");
     }
 
     vkCmdPipelineBarrier(
@@ -631,8 +646,10 @@ void vkTools::VkErrorCheck( const VkResult& result )
         default:
             break;
         }
-        std::cout << "Vulkan runtime error: " << stream.str().c_str() << std::endl;
-        exit(-1);
+
+        std::ostringstream errMsg;
+        errMsg << "Vulkan runtime error: " << stream.str();
+        MsgAssert(1, 0, errMsg.str().c_str());
     }
 }
 
