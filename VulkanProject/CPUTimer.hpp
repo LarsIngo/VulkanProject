@@ -8,15 +8,15 @@ class CPUTimer {
         // Constructor.
         CPUTimer(float& dt)
         {
-            mStart = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+            mStart = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
             mDt = &dt;
         }
 
         // Destructor.
         ~CPUTimer()
         {
-            long long deltaTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count() - mStart;
-            *mDt = static_cast<float>(deltaTime) / 1000.f;
+            long long nanoTime = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count() - mStart;
+            *mDt = static_cast<float>(nanoTime) / 1000000000.f;
         }
 
     private:
@@ -25,4 +25,4 @@ class CPUTimer {
 
 };
 
-#define CPUTIMER(dt) CPUTimer instance(dt)
+#define CPUTIMER(dt) CPUTimer cpuTimer(dt)

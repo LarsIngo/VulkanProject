@@ -13,12 +13,18 @@
     <ClCompile Include="VkRenderer.cpp">
       <Filter>Vulkan</Filter>
     </ClCompile>
+    <ClCompile Include="vkTools.cpp">
+      <Filter>Tools</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="VkRenderer.hpp">
       <Filter>Vulkan</Filter>
     </ClInclude>
     <ClInclude Include="CPUTimer.hpp">
+      <Filter>Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="vkTools.hpp">
       <Filter>Tools</Filter>
     </ClInclude>
   </ItemGroup>

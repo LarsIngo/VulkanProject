@@ -155,10 +155,12 @@
   <ItemGroup>
     <ClInclude Include="CPUTimer.hpp" />
     <ClInclude Include="VkRenderer.hpp" />
+    <ClInclude Include="vkTools.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="VkRenderer.cpp" />
+    <ClCompile Include="vkTools.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
