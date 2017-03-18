@@ -42,6 +42,8 @@ namespace vkTools
     void CreateGraphicsPipeline( const VkDevice& device,
         const VkExtent2D& extent,
         const std::vector<VkPipelineShaderStageCreateInfo>& shader_stage_list,
+        const VkPrimitiveTopology& topology,
+        const VkFrontFace& frontFace,
         const VkRenderPass& render_pass,
         const VkPipelineLayout& pipeline_layout,
         VkPipeline& graphics_pipeline );
@@ -56,6 +58,7 @@ namespace vkTools
     void CreateImage( const VkDevice& device, const VkPhysicalDevice& gpu, std::uint32_t width, std::uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& image_memory );
     void CreateImageView( const VkDevice& device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, VkImageView& image_view );
 
+    void WriteBuffer(const VkCommandBuffer& command_buffer, VkDevice device, VkDeviceMemory src_buffer_memory, void* data, std::uint32_t byte_size, std::uint32_t byte_offset);
     void CopyBuffer( const VkCommandBuffer& command_buffer, VkBuffer src_buffer, VkBuffer dst_buffer, std::uint32_t byte_size, std::uint32_t src_byte_offset, std::uint32_t dst_byte_offset );
     void CreateBuffer( const VkDevice& device, const VkPhysicalDevice& physical_device, std::size_t total_size, VkBufferUsageFlags buffer_usage_flags, VkMemoryPropertyFlags memory_property_flags, VkBuffer& buffer, VkDeviceMemory& buffer_memory, uint32_t& min_offset_alignment );
 

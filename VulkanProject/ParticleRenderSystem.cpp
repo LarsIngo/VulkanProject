@@ -16,20 +16,13 @@ ParticleRenderSystem::ParticleRenderSystem(VkDevice device, VkPhysicalDevice phy
     mFormat = format;
     mRenderPass = renderPass;
 
-    // Create meta buffers.
+    // Create meta buffer.
     uint32_t minOffsetAligment;
-    vkTools::CreateBuffer(mDevice, mPhysicalDevice, sizeof(UpdateMetaData),
+    vkTools::CreateBuffer(mDevice, mPhysicalDevice, sizeof(MetaData),
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-        mUpdateMetaDataBuffer, mUpdateMetaDataBufferMemory, minOffsetAligment
-        );
-    assert(sizeof(UpdateMetaData) % minOffsetAligment == 0);
-
-    vkTools::CreateBuffer(mDevice, mPhysicalDevice, sizeof(RenderMetaData),
-        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-        mRenderMetaDataBuffer, mRenderMetaDataBufferMemory, minOffsetAligment
+        mMetaDataBuffer, mMetaDataBufferMemory, minOffsetAligment
     );
-    int t = (sizeof(RenderMetaData));
-    assert(sizeof(RenderMetaData) % minOffsetAligment == 0);
+    assert(sizeof(MetaData) % minOffsetAligment == 0);
 
     // Create render pipeline.
     {
@@ -92,56 +85,14 @@ ParticleRenderSystem::ParticleRenderSystem(VkDevice device, VkPhysicalDevice phy
             vkTools::CreatePipelineShaderStageCreateInfo(mDevice, mPixelShaderModule, VK_SHADER_STAGE_FRAGMENT_BIT, "main"),
         };
 
-        vkTools::CreateGraphicsPipeline(mDevice, mExtent, pipelineShaderStageCreateInfoList, mRenderPass, mPipelineLayout, mPipeline);
+        vkTools::CreateGraphicsPipeline(mDevice, mExtent, pipelineShaderStageCreateInfoList, VK_PRIMITIVE_TOPOLOGY_POINT_LIST, VK_FRONT_FACE_COUNTER_CLOCKWISE, mRenderPass, mPipelineLayout, mPipeline);
     }
-
-    //    {   // Create blend state.
-    //        D3D11_BLEND_DESC blendDesc;
-    //        ZeroMemory(&blendDesc, sizeof(D3D11_BLEND_DESC));
-    //        blendDesc.AlphaToCoverageEnable = false;
-    //        blendDesc.IndependentBlendEnable = true;
-
-    //        blendDesc.RenderTarget[0].BlendEnable = true;
-    //        blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
-    //        blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_ONE;
-    //        blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
-    //        blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
-    //        blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ONE;
-    //        blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
-    //        blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
-
-    //        DxAssert(mpDevice->CreateBlendState(&blendDesc, &mBlendState), S_OK);
-    //    }
-        
-    VkDescriptorBufferInfo mVertexShaderInputDescriptorBufferInfo;
-    VkWriteDescriptorSet mVertexShaderInputWriteDescriptorSet;
-    mVertexShaderInputDescriptorBufferInfo.buffer = mRenderMetaDataBuffer;
-    mVertexShaderInputDescriptorBufferInfo.offset = 0;
-    mVertexShaderInputDescriptorBufferInfo.range = VK_WHOLE_SIZE;
-
-    mVertexShaderInputWriteDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    mVertexShaderInputWriteDescriptorSet.pNext = NULL;
-    mVertexShaderInputWriteDescriptorSet.dstSet = mPipelineDescriptorSet;
-    mVertexShaderInputWriteDescriptorSet.dstArrayElement = 0;
-    mVertexShaderInputWriteDescriptorSet.descriptorCount = 1;
-    mVertexShaderInputWriteDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    mVertexShaderInputWriteDescriptorSet.pImageInfo = NULL;
-    mVertexShaderInputWriteDescriptorSet.dstBinding = 0;
-    mVertexShaderInputWriteDescriptorSet.pBufferInfo = &mVertexShaderInputDescriptorBufferInfo;
-    vkUpdateDescriptorSets(mDevice, 1, &mVertexShaderInputWriteDescriptorSet, 0, NULL);
-
-    // Create update pipeline.
-    //vkTools::CreateShaderModule(mDevice, "resources/shaders/Particles_Update_CS.spv", mComputeShaderModule);
 }
 
 ParticleRenderSystem::~ParticleRenderSystem()
 {
-    vkFreeMemory(mDevice, mUpdateMetaDataBufferMemory, nullptr);
-    vkFreeMemory(mDevice, mRenderMetaDataBufferMemory, nullptr);
-    vkDestroyBuffer(mDevice, mUpdateMetaDataBuffer, nullptr);
-    vkDestroyBuffer(mDevice, mRenderMetaDataBuffer, nullptr);
-
-    //vkDestroyShaderModule(mDevice, mComputeShaderModule, nullptr);
+    vkFreeMemory(mDevice, mMetaDataBufferMemory, nullptr);
+    vkDestroyBuffer(mDevice, mMetaDataBuffer, nullptr);
 
     vkDestroyShaderModule(mDevice, mVertexShaderModule, nullptr);
     vkDestroyShaderModule(mDevice, mGeometryShaderModule, nullptr);
@@ -152,34 +103,16 @@ ParticleRenderSystem::~ParticleRenderSystem()
     vkDestroyDescriptorSetLayout(mDevice, mPipelineDescriptorSetLayout, nullptr);
     vkFreeDescriptorSets(mDevice, mPipelineDescriptorPool, 1, &mPipelineDescriptorSet);
     vkDestroyDescriptorPool(mDevice, mPipelineDescriptorPool, nullptr);
-
-    //mBlendState->Release();
 }
-
-//void ParticleSystem::Update(VkCommandBuffer commandBuffer, Scene* scene, float dt)
-//{
-//    //mpDeviceContext->CSSetShader(mComputeShader, NULL, NULL);
-//    //mpDeviceContext->CSSetShaderResources(0, 1, &scene->mParticleBuffer->GetInputBuffer()->mSRV);
-//    //{
-//    //    mUpdateMetaData.dt = dt;
-//    //    mUpdateMetaData.particleCount = scene->mParticleCount;
-//    //    DxHelp::WriteStructuredBuffer<UpdateMetaData>(mpDeviceContext, &mUpdateMetaData, 1, mUpdateMetaDataBuffer);
-//    //    mpDeviceContext->CSSetShaderResources(1, 1, &mUpdateMetaDataBuffer);
-//    //}
-//    //mpDeviceContext->CSSetUnorderedAccessViews(0, 1, &scene->mParticleBuffer->GetOutputBuffer()->mUAV, NULL);
-//
-//    //mpDeviceContext->Dispatch(scene->mParticleCount / 256 + 1,1,1);
-//
-//    //mpDeviceContext->CSSetShader(NULL, NULL, NULL);
-//    //void* p[1] = { NULL };
-//    //mpDeviceContext->CSSetShaderResources(0, 1, (ID3D11ShaderResourceView**)p);
-//    //mpDeviceContext->CSSetShaderResources(1, 1, (ID3D11ShaderResourceView**)p);
-//    //mpDeviceContext->CSSetUnorderedAccessViews(0, 1, (ID3D11UnorderedAccessView**)p, NULL);
-//}
 
 void ParticleRenderSystem::Render(VkCommandBuffer commandBuffer, Scene* scene, Camera* camera)
 {
     assert(camera->mpFrameBuffer->mWidth == mExtent.width && camera->mpFrameBuffer->mHeight == mExtent.height);
+
+    mMetaData.vpMatrix = glm::transpose(camera->mProjectionMatrix * camera->mViewMatrix);
+    mMetaData.lensPosition = camera->mPosition;
+    mMetaData.lensUpDirection = camera->mUpDirection;
+    vkTools::WriteBuffer(commandBuffer, mDevice, mMetaDataBufferMemory, &mMetaData, sizeof(MetaData), 0);
 
     VkRenderPassBeginInfo renderPassBeginInfo;
     renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -192,6 +125,22 @@ void ParticleRenderSystem::Render(VkCommandBuffer commandBuffer, Scene* scene, C
     renderPassBeginInfo.renderArea.offset.y = 0;
     renderPassBeginInfo.clearValueCount = 0;
     renderPassBeginInfo.pClearValues = NULL;
+
+    VkDescriptorBufferInfo mVertexShaderInputDescriptorBufferInfo;
+    VkWriteDescriptorSet mVertexShaderInputWriteDescriptorSet;
+    mVertexShaderInputDescriptorBufferInfo.buffer = scene->mParticleBuffer->GetOutputBuffer()->mBuffer;
+    mVertexShaderInputDescriptorBufferInfo.offset = 0;
+    mVertexShaderInputDescriptorBufferInfo.range = VK_WHOLE_SIZE;
+    mVertexShaderInputWriteDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    mVertexShaderInputWriteDescriptorSet.pNext = NULL;
+    mVertexShaderInputWriteDescriptorSet.dstSet = mPipelineDescriptorSet;
+    mVertexShaderInputWriteDescriptorSet.dstArrayElement = 0;
+    mVertexShaderInputWriteDescriptorSet.descriptorCount = 1;
+    mVertexShaderInputWriteDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    mVertexShaderInputWriteDescriptorSet.pImageInfo = NULL;
+    mVertexShaderInputWriteDescriptorSet.dstBinding = 0;
+    mVertexShaderInputWriteDescriptorSet.pBufferInfo = &mVertexShaderInputDescriptorBufferInfo;
+    vkUpdateDescriptorSets(mDevice, 1, &mVertexShaderInputWriteDescriptorSet, 0, NULL);
     
     camera->mpFrameBuffer->TransitionImageLayout(commandBuffer, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);

@@ -19,12 +19,6 @@ class ParticleRenderSystem
         // Destructor.
         ~ParticleRenderSystem();
 
-        // Update particles.
-        // commandBuffer Command buffer to update.
-        // scene Scene to update.
-        // dt Delta time.
-        //void Update(VkCommandBuffer commandBuffer, Scene* scene, float dt);
-
         // Render particles.
         // commandBuffer Command buffer to render.
         // scene Scene to render.
@@ -38,9 +32,6 @@ class ParticleRenderSystem
         VkFormat mFormat;
         VkRenderPass mRenderPass;
 
-        //VkShaderModule mComputeShaderModule;
-
-
         VkShaderModule mVertexShaderModule;
         VkShaderModule mGeometryShaderModule;
         VkShaderModule mPixelShaderModule;
@@ -51,24 +42,13 @@ class ParticleRenderSystem
         VkPipelineLayout mPipelineLayout;
         VkPipeline mPipeline;
 
-        //ID3D11BlendState* mBlendState;
-        
-        struct UpdateMetaData
-        {
-            float dt;
-            unsigned int particleCount;
-            float pad[6];
-        } mUpdateMetaData;
-        VkBuffer mUpdateMetaDataBuffer;
-        VkDeviceMemory mUpdateMetaDataBufferMemory;
-
-        struct RenderMetaData
+        struct MetaData
         {
             glm::mat4 vpMatrix;
             glm::vec3 lensPosition;
             glm::vec3 lensUpDirection;
             float pad[2];
-        } mRenderMetaData;
-        VkBuffer mRenderMetaDataBuffer;
-        VkDeviceMemory mRenderMetaDataBufferMemory;
+        } mMetaData;
+        VkBuffer mMetaDataBuffer;
+        VkDeviceMemory mMetaDataBufferMemory;
 };

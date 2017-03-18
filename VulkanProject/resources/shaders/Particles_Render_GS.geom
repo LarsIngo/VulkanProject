@@ -36,13 +36,26 @@ layout(triangle_strip) out;
 layout(max_vertices = 4) out;
 void main()
 {
-    gl_Position = GSInput[0].position;
-    GSOutput.position = GSInput[0].position;
-    GSOutput.worldPosition = GSInput[0].position.xyz;
-    GSOutput.color = GSInput[0].color.xyz;
-    GSOutput.uv = GSInput[0].scale.xy;
+    vec3 worldPosition = GSInput[0].position.xyz;
+    vec3 color = GSInput[0].color.xyz;
+    vec2 scale = GSInput[0].scale.xy;
 
-
+    for (uint i = 0; i < 4; ++i)
+    {
+        uint x = uint(i == 1 || i == 3);
+        uint y = uint(i == 0 || i == 1);
+        
+        gl_Position.xyz = worldPosition + vec3((x * 2.f - 1.f) * 0.1f, (y * 2.f - 1.f) * 0.1f, 0.5f);
+        gl_Position.w = 1.f;
+        GSOutput.position = gl_Position;
+        GSOutput.worldPosition = gl_Position.xyz;
+        GSOutput.color = color;
+        GSOutput.uv = vec2(x, 1.f - y);
+    
+        EmitVertex();
+    }
+    
+    EndPrimitive();
 
     //GSOutput output;
 
@@ -66,7 +79,7 @@ void main()
     //    output.position.xyz = worldPosition + paticleSideDirection * (x * 2.f - 1.f) * scale.x + paticleUpDirection * (y * 2.f - 1.f) * scale.y;
     //    output.position.w = 1.f;
     //    output.worldPosition = output.position.xyz;
-    //     output.position = mul(output.position, vpMatrix);
+    //    output.position = mul(output.position, vpMatrix);
     //    output.color = color;
     //    output.uv = float2(x, 1.f - y);
     

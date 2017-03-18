@@ -159,6 +159,7 @@
     <ClInclude Include="InputManager.hpp" />
     <ClInclude Include="Particle.hpp" />
     <ClInclude Include="ParticleRenderSystem.hpp" />
+    <ClInclude Include="ParticleUpdateSystem.hpp" />
     <ClInclude Include="Scene.hpp" />
     <ClInclude Include="StorageBuffer.hpp" />
     <ClInclude Include="StorageSwapBuffer.hpp" />
@@ -171,6 +172,7 @@
     <ClCompile Include="InputManager.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ParticleRenderSystem.cpp" />
+    <ClCompile Include="ParticleUpdateSystem.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="StorageBuffer.cpp" />
     <ClCompile Include="StorageSwapBuffer.cpp" />

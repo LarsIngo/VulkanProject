@@ -8,6 +8,7 @@
 #include "Camera.hpp"
 #include "vkTools.hpp"
 #include "ParticleRenderSystem.hpp"
+#include "ParticleUpdateSystem.hpp"
 #include "Scene.hpp"
 
 int main()
@@ -32,6 +33,7 @@ int main()
 
     VkCommandBuffer transferCommandBuffer = vkTools::BeginSingleTimeCommand(device, renderer.mTransferCommandPool);
 
+    ParticleUpdateSystem particleUpdateSystem(device, physicalDevice);
     ParticleRenderSystem particleRenderSystem(device, physicalDevice, width, height, renderer.mSurfaceFormatKHR.format, renderPass);
 
     InputManager inputManager(renderer.mGLFWwindow);
@@ -40,14 +42,14 @@ int main()
     Camera camera(60.f, &frameBuffer);
     camera.mPosition.z = 0.f;
 
-    Scene scene(device, physicalDevice, 1024 * 1024);
+    int lenX = 1;
+    int lenY = 1;
+    Scene scene(device, physicalDevice, lenX * lenY);
     {
         std::vector<Particle> particleList;
         Particle particle;
         float spaceing = 1.f;
         float speed = 0.1f;
-        int lenX = 1024;
-        int lenY = 1024;
         particle.scale = glm::vec4(spaceing / 2.f, spaceing / 2.f, 0.f, 0.f);
         for (int y = 0; y < lenY; ++y)
         {
@@ -73,15 +75,15 @@ int main()
         CPUTIMER(dt);
 
         // +++ UPDATE +++ //
-        //vkTools::BeginCommandBuffer(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, computeCommandBuffer);
+        vkTools::BeginCommandBuffer(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, computeCommandBuffer);
 
-        //camera.Update(20.f, 2.f, dt, &inputManager);
-        //particleSystem.Update(computeCommandBuffer, &scene, dt);
+        camera.Update(20.f, 2.f, dt, &inputManager);
+        particleUpdateSystem.Update(computeCommandBuffer, &scene, dt);
 
-        //vkTools::EndCommandBuffer(computeCommandBuffer);
-        //vkTools::SubmitCommandBuffer(computeQueue, computeCommandBuffer);
-        //vkTools::WaitQueue(computeQueue);
-        //vkTools::ResetCommandBuffer(computeCommandBuffer);
+        vkTools::EndCommandBuffer(computeCommandBuffer);
+        vkTools::SubmitCommandBuffer(computeQueue, computeCommandBuffer);
+        vkTools::WaitQueue(computeQueue);
+        vkTools::ResetCommandBuffer(computeCommandBuffer);
         // --- UPDATE --- //
 
         // +++ RENDER +++ //

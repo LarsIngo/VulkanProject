@@ -6,10 +6,12 @@
 
 class StorageSwapBuffer;
 class ParticleRenderSystem;
+class ParticleUpdateSystem;
 
 class Scene
 {
     friend ParticleRenderSystem;
+    friend ParticleUpdateSystem;
 
     public:
         // Constructor.
