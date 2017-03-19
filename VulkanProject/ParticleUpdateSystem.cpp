@@ -23,17 +23,26 @@ ParticleUpdateSystem::ParticleUpdateSystem(VkDevice device, VkPhysicalDevice phy
     // Create compute pipeline.
     {
         vkTools::CreateShaderModule(mDevice, "resources/shaders/Particles_Update_CS.spv", mComputeShaderModule);
-        /*vkTools::CreateShaderModule(mDevice, "resources/shaders/Particles_Render_VS.spv", mVertexShaderModule);
-        vkTools::CreateShaderModule(mDevice, "resources/shaders/Particles_Render_GS.spv", mGeometryShaderModule);
-        vkTools::CreateShaderModule(mDevice, "resources/shaders/Particles_Render_PS.spv", mPixelShaderModule);
 
-        VkDescriptorSetLayoutBinding descriptorSetLayoutBinding;
-        descriptorSetLayoutBinding.descriptorCount = 1;
-        descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
-        descriptorSetLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-        descriptorSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        descriptorSetLayoutBinding.binding = 0;
-        std::vector<VkDescriptorSetLayoutBinding> descriptorSetLayoutBindingList{ descriptorSetLayoutBinding };
+        VkDescriptorSetLayoutBinding particleInBufferSetLayoutBinding;
+        particleInBufferSetLayoutBinding.descriptorCount = 1;
+        particleInBufferSetLayoutBinding.pImmutableSamplers = nullptr;
+        particleInBufferSetLayoutBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+        particleInBufferSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        particleInBufferSetLayoutBinding.binding = 0;
+        VkDescriptorSetLayoutBinding particleOutBufferSetLayoutBinding;
+        particleOutBufferSetLayoutBinding.descriptorCount = 1;
+        particleOutBufferSetLayoutBinding.pImmutableSamplers = nullptr;
+        particleOutBufferSetLayoutBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+        particleOutBufferSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        particleOutBufferSetLayoutBinding.binding = 1;
+        VkDescriptorSetLayoutBinding metaBufferSetLayoutBinding;
+        metaBufferSetLayoutBinding.descriptorCount = 1;
+        metaBufferSetLayoutBinding.pImmutableSamplers = nullptr;
+        metaBufferSetLayoutBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+        metaBufferSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        metaBufferSetLayoutBinding.binding = 2;
+        std::vector<VkDescriptorSetLayoutBinding> descriptorSetLayoutBindingList{ particleInBufferSetLayoutBinding, particleOutBufferSetLayoutBinding, metaBufferSetLayoutBinding };
 
         VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo;
         descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -53,10 +62,10 @@ ParticleUpdateSystem::ParticleUpdateSystem(VkDevice device, VkPhysicalDevice phy
         pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
         pipelineLayoutCreateInfo.pPushConstantRanges = NULL;
         vkTools::VkErrorCheck(vkCreatePipelineLayout(mDevice, &pipelineLayoutCreateInfo, nullptr, &mPipelineLayout));
-         
+
         VkDescriptorPoolSize descriptorPoolSize;
         descriptorPoolSize.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        descriptorPoolSize.descriptorCount = 1;
+        descriptorPoolSize.descriptorCount = descriptorSetLayoutBindingList.size();
         std::vector<VkDescriptorPoolSize> descriptorPoolSizeList{ descriptorPoolSize };
 
         VkDescriptorPoolCreateInfo descriptorPoolCreateInfo;
@@ -76,13 +85,15 @@ ParticleUpdateSystem::ParticleUpdateSystem(VkDevice device, VkPhysicalDevice phy
         descriptorSetAllocateInfo.descriptorSetCount = 1;
         vkTools::VkErrorCheck(vkAllocateDescriptorSets(mDevice, &descriptorSetAllocateInfo, &mPipelineDescriptorSet));
 
-        std::vector<VkPipelineShaderStageCreateInfo> pipelineShaderStageCreateInfoList{
-            vkTools::CreatePipelineShaderStageCreateInfo(mDevice, mVertexShaderModule, VK_SHADER_STAGE_VERTEX_BIT, "main"),
-            vkTools::CreatePipelineShaderStageCreateInfo(mDevice, mGeometryShaderModule, VK_SHADER_STAGE_GEOMETRY_BIT, "main"),
-            vkTools::CreatePipelineShaderStageCreateInfo(mDevice, mPixelShaderModule, VK_SHADER_STAGE_FRAGMENT_BIT, "main"),
-        };
-
-        vkTools::CreateGraphicsPipeline(mDevice, mExtent, pipelineShaderStageCreateInfoList, VK_PRIMITIVE_TOPOLOGY_POINT_LIST, VK_FRONT_FACE_COUNTER_CLOCKWISE, mRenderPass, mPipelineLayout, mPipeline);*/
+        VkComputePipelineCreateInfo computePipelineCreateInfo;
+        computePipelineCreateInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+        computePipelineCreateInfo.pNext = NULL;
+        computePipelineCreateInfo.flags = 0;
+        computePipelineCreateInfo.stage = vkTools::CreatePipelineShaderStageCreateInfo(mDevice, mComputeShaderModule, VK_SHADER_STAGE_COMPUTE_BIT, "main");;
+        computePipelineCreateInfo.layout = mPipelineLayout;
+        computePipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
+        computePipelineCreateInfo.basePipelineIndex = NULL;
+        vkTools::VkErrorCheck(vkCreateComputePipelines(mDevice, VK_NULL_HANDLE, 1, &computePipelineCreateInfo, nullptr, &mPipeline));
     }
 }
 
@@ -93,16 +104,77 @@ ParticleUpdateSystem::~ParticleUpdateSystem()
 
     vkDestroyShaderModule(mDevice, mComputeShaderModule, nullptr);
 
-    /*vkDestroyPipeline(mDevice, mPipeline, nullptr);
+    vkDestroyPipeline(mDevice, mPipeline, nullptr);
     vkDestroyPipelineLayout(mDevice, mPipelineLayout, nullptr);
     vkDestroyDescriptorSetLayout(mDevice, mPipelineDescriptorSetLayout, nullptr);
     vkFreeDescriptorSets(mDevice, mPipelineDescriptorPool, 1, &mPipelineDescriptorSet);
-    vkDestroyDescriptorPool(mDevice, mPipelineDescriptorPool, nullptr);*/
+    vkDestroyDescriptorPool(mDevice, mPipelineDescriptorPool, nullptr);
 }
 
 void ParticleUpdateSystem::Update(VkCommandBuffer commandBuffer, Scene* scene, float dt)
 {
-    scene->mParticleBuffer->GetOutputBuffer()->Copy(commandBuffer, scene->mParticleBuffer->GetInputBuffer());
+    //scene->mParticleBuffer->GetOutputBuffer()->Copy(commandBuffer, scene->mParticleBuffer->GetInputBuffer());
+
+    mMetaData.dt = dt;
+    mMetaData.particleCount = scene->mParticleCount;
+    vkTools::WriteBuffer(commandBuffer, mDevice, mMetaDataBufferMemory, &mMetaData, sizeof(MetaData), 0);
+
+    {   // vkUpdateDescriptorSets.
+        VkDescriptorBufferInfo particleInBufferInputDescriptorBufferInfo;
+        VkWriteDescriptorSet particleInBufferInputWriteDescriptorSet;
+        particleInBufferInputDescriptorBufferInfo.buffer = scene->mParticleBuffer->GetInputBuffer()->mBuffer;
+        particleInBufferInputDescriptorBufferInfo.offset = 0;
+        particleInBufferInputDescriptorBufferInfo.range = scene->mParticleBuffer->GetInputBuffer()->GetSize();
+        particleInBufferInputWriteDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        particleInBufferInputWriteDescriptorSet.pNext = NULL;
+        particleInBufferInputWriteDescriptorSet.dstSet = mPipelineDescriptorSet;
+        particleInBufferInputWriteDescriptorSet.dstArrayElement = 0;
+        particleInBufferInputWriteDescriptorSet.descriptorCount = 1;
+        particleInBufferInputWriteDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        particleInBufferInputWriteDescriptorSet.pImageInfo = NULL;
+        particleInBufferInputWriteDescriptorSet.dstBinding = 0;
+        particleInBufferInputWriteDescriptorSet.pBufferInfo = &particleInBufferInputDescriptorBufferInfo;
+
+        VkDescriptorBufferInfo particleOutBufferInputDescriptorBufferInfo;
+        VkWriteDescriptorSet particleOutBufferInputWriteDescriptorSet;
+        particleOutBufferInputDescriptorBufferInfo.buffer = scene->mParticleBuffer->GetOutputBuffer()->mBuffer;
+        particleOutBufferInputDescriptorBufferInfo.offset = 0;
+        particleOutBufferInputDescriptorBufferInfo.range = scene->mParticleBuffer->GetOutputBuffer()->GetSize();
+        particleOutBufferInputWriteDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        particleOutBufferInputWriteDescriptorSet.pNext = NULL;
+        particleOutBufferInputWriteDescriptorSet.dstSet = mPipelineDescriptorSet;
+        particleOutBufferInputWriteDescriptorSet.dstArrayElement = 0;
+        particleOutBufferInputWriteDescriptorSet.descriptorCount = 1;
+        particleOutBufferInputWriteDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        particleOutBufferInputWriteDescriptorSet.pImageInfo = NULL;
+        particleOutBufferInputWriteDescriptorSet.dstBinding = 1;
+        particleOutBufferInputWriteDescriptorSet.pBufferInfo = &particleOutBufferInputDescriptorBufferInfo;
+
+        VkDescriptorBufferInfo metaBufferInputDescriptorBufferInfo;
+        VkWriteDescriptorSet metaBufferInputWriteDescriptorSet;
+        metaBufferInputDescriptorBufferInfo.buffer = mMetaDataBuffer;
+        metaBufferInputDescriptorBufferInfo.offset = 0;
+        metaBufferInputDescriptorBufferInfo.range = sizeof(MetaData);
+        metaBufferInputWriteDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        metaBufferInputWriteDescriptorSet.pNext = NULL;
+        metaBufferInputWriteDescriptorSet.dstSet = mPipelineDescriptorSet;
+        metaBufferInputWriteDescriptorSet.dstArrayElement = 0;
+        metaBufferInputWriteDescriptorSet.descriptorCount = 1;
+        metaBufferInputWriteDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        metaBufferInputWriteDescriptorSet.pImageInfo = NULL;
+        metaBufferInputWriteDescriptorSet.dstBinding = 2;
+        metaBufferInputWriteDescriptorSet.pBufferInfo = &metaBufferInputDescriptorBufferInfo;
+
+        std::vector<VkWriteDescriptorSet> writeDescriptorSetList{ particleInBufferInputWriteDescriptorSet, particleOutBufferInputWriteDescriptorSet, metaBufferInputWriteDescriptorSet };
+        vkUpdateDescriptorSets(mDevice, writeDescriptorSetList.size(), writeDescriptorSetList.data(), 0, NULL);
+    }
+    
+
+
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, mPipeline);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, mPipelineLayout, 0, 1, &mPipelineDescriptorSet, 0, NULL);
+    vkCmdDispatch(commandBuffer, scene->mParticleCount / 256 + 1, 1, 1);
+
 
 //    //mpDeviceContext->CSSetShader(mComputeShader, NULL, NULL);
 //    //mpDeviceContext->CSSetShaderResources(0, 1, &scene->mParticleBuffer->GetInputBuffer()->mSRV);

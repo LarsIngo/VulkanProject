@@ -31,11 +31,11 @@ class ParticleUpdateSystem
 
         VkShaderModule mComputeShaderModule;
 
-        //VkDescriptorPool mPipelineDescriptorPool;
-        //VkDescriptorSet mPipelineDescriptorSet;
-        //VkDescriptorSetLayout mPipelineDescriptorSetLayout;
-        //VkPipelineLayout mPipelineLayout;
-        //VkPipeline mPipeline;
+        VkDescriptorPool mPipelineDescriptorPool;
+        VkDescriptorSet mPipelineDescriptorSet;
+        VkDescriptorSetLayout mPipelineDescriptorSetLayout;
+        VkPipelineLayout mPipelineLayout;
+        VkPipeline mPipeline;
         
         struct MetaData
         {

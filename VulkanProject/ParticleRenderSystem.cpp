@@ -132,40 +132,40 @@ void ParticleRenderSystem::Render(VkCommandBuffer commandBuffer, Scene* scene, C
     renderPassBeginInfo.clearValueCount = 0;
     renderPassBeginInfo.pClearValues = NULL;
 
+    {   // vkUpdateDescriptorSets.
+        VkDescriptorBufferInfo particleBufferInputDescriptorBufferInfo;
+        VkWriteDescriptorSet particleBufferInputWriteDescriptorSet;
+        particleBufferInputDescriptorBufferInfo.buffer = scene->mParticleBuffer->GetOutputBuffer()->mBuffer;
+        particleBufferInputDescriptorBufferInfo.offset = 0;
+        particleBufferInputDescriptorBufferInfo.range = scene->mParticleBuffer->GetOutputBuffer()->GetSize();
+        particleBufferInputWriteDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        particleBufferInputWriteDescriptorSet.pNext = NULL;
+        particleBufferInputWriteDescriptorSet.dstSet = mPipelineDescriptorSet;
+        particleBufferInputWriteDescriptorSet.dstArrayElement = 0;
+        particleBufferInputWriteDescriptorSet.descriptorCount = 1;
+        particleBufferInputWriteDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        particleBufferInputWriteDescriptorSet.pImageInfo = NULL;
+        particleBufferInputWriteDescriptorSet.dstBinding = 0;
+        particleBufferInputWriteDescriptorSet.pBufferInfo = &particleBufferInputDescriptorBufferInfo;
 
-    VkDescriptorBufferInfo particleBufferInputDescriptorBufferInfo;
-    VkWriteDescriptorSet particleBufferInputWriteDescriptorSet;
-    particleBufferInputDescriptorBufferInfo.buffer = scene->mParticleBuffer->GetOutputBuffer()->mBuffer;
-    particleBufferInputDescriptorBufferInfo.offset = 0;
-    particleBufferInputDescriptorBufferInfo.range = scene->mParticleBuffer->GetOutputBuffer()->GetSize();
-    particleBufferInputWriteDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    particleBufferInputWriteDescriptorSet.pNext = NULL;
-    particleBufferInputWriteDescriptorSet.dstSet = mPipelineDescriptorSet;
-    particleBufferInputWriteDescriptorSet.dstArrayElement = 0;
-    particleBufferInputWriteDescriptorSet.descriptorCount = 1;
-    particleBufferInputWriteDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    particleBufferInputWriteDescriptorSet.pImageInfo = NULL;
-    particleBufferInputWriteDescriptorSet.dstBinding = 0;
-    particleBufferInputWriteDescriptorSet.pBufferInfo = &particleBufferInputDescriptorBufferInfo;
+        VkDescriptorBufferInfo metaBufferInputDescriptorBufferInfo;
+        VkWriteDescriptorSet metaBufferInputWriteDescriptorSet;
+        metaBufferInputDescriptorBufferInfo.buffer = mMetaDataBuffer;
+        metaBufferInputDescriptorBufferInfo.offset = 0;
+        metaBufferInputDescriptorBufferInfo.range = sizeof(MetaData);
+        metaBufferInputWriteDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        metaBufferInputWriteDescriptorSet.pNext = NULL;
+        metaBufferInputWriteDescriptorSet.dstSet = mPipelineDescriptorSet;
+        metaBufferInputWriteDescriptorSet.dstArrayElement = 0;
+        metaBufferInputWriteDescriptorSet.descriptorCount = 1;
+        metaBufferInputWriteDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        metaBufferInputWriteDescriptorSet.pImageInfo = NULL;
+        metaBufferInputWriteDescriptorSet.dstBinding = 1;
+        metaBufferInputWriteDescriptorSet.pBufferInfo = &metaBufferInputDescriptorBufferInfo;
 
-    VkDescriptorBufferInfo metaBufferInputDescriptorBufferInfo;
-    VkWriteDescriptorSet metaBufferInputWriteDescriptorSet;
-    metaBufferInputDescriptorBufferInfo.buffer = mMetaDataBuffer;
-    metaBufferInputDescriptorBufferInfo.offset = 0;
-    metaBufferInputDescriptorBufferInfo.range = sizeof(MetaData);
-    metaBufferInputWriteDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    metaBufferInputWriteDescriptorSet.pNext = NULL;
-    metaBufferInputWriteDescriptorSet.dstSet = mPipelineDescriptorSet;
-    metaBufferInputWriteDescriptorSet.dstArrayElement = 0;
-    metaBufferInputWriteDescriptorSet.descriptorCount = 1;
-    metaBufferInputWriteDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    metaBufferInputWriteDescriptorSet.pImageInfo = NULL;
-    metaBufferInputWriteDescriptorSet.dstBinding = 1;
-    metaBufferInputWriteDescriptorSet.pBufferInfo = &metaBufferInputDescriptorBufferInfo;
-
-    std::vector<VkWriteDescriptorSet> writeDescriptorSetList{ particleBufferInputWriteDescriptorSet, metaBufferInputWriteDescriptorSet };
-    vkUpdateDescriptorSets(mDevice, writeDescriptorSetList.size(), writeDescriptorSetList.data(), 0, NULL);
-    
+        std::vector<VkWriteDescriptorSet> writeDescriptorSetList{ particleBufferInputWriteDescriptorSet, metaBufferInputWriteDescriptorSet };
+        vkUpdateDescriptorSets(mDevice, writeDescriptorSetList.size(), writeDescriptorSetList.data(), 0, NULL);
+    }
 
     camera->mpFrameBuffer->TransitionImageLayout(commandBuffer, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
