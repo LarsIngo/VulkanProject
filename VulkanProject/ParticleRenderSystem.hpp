@@ -45,9 +45,8 @@ class ParticleRenderSystem
         struct MetaData
         {
             glm::mat4 vpMatrix;
-            glm::vec3 lensPosition;
-            glm::vec3 lensUpDirection;
-            float pad[2];
+            glm::vec4 lensPosition;
+            glm::vec4 lensUpDirection;
         } mMetaData;
         VkBuffer mMetaDataBuffer;
         VkDeviceMemory mMetaDataBufferMemory;

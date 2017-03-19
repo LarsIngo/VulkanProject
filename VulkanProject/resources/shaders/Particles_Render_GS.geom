@@ -21,68 +21,50 @@ struct GSOutputStruct
 layout(location = 0) out GSOutputStruct GSOutput;
 
 // Meta data.
-//struct MetaData
-//{
-//    float4x4 vpMatrix;
-//    float3 lensPosition;
-//    float3 lensUpDirection;
-//    float pad[2];
-//};
+struct MetaData
+{
+    mat4 vpMatrix;
+    vec4 lensPosition;
+    vec4 lensUpDirection;
+};
 // Meta buffer.
-//StructuredBuffer<MetaData> g_MetaBuffer : register(t0);
+layout(binding = 1) buffer GSMetaData { MetaData g_MetaBuffer[]; };
 
 layout(points) in;
 layout(triangle_strip) out;
 layout(max_vertices = 4) out;
 void main()
 {
+    MetaData metaData = g_MetaBuffer[0];
+    mat4 vpMatrix = metaData.vpMatrix;
+    vec3 lensPosition = metaData.lensPosition.xyz;
+    vec3 lensUpDirection = metaData.lensUpDirection.xyz;
+
     vec3 worldPosition = GSInput[0].position.xyz;
     vec3 color = GSInput[0].color.xyz;
     vec2 scale = GSInput[0].scale.xy;
+
+    vec3 particleFrontDirection = normalize(lensPosition - worldPosition);
+    vec3 paticleSideDirection = cross(particleFrontDirection, lensUpDirection);
+    vec3 paticleUpDirection = cross(paticleSideDirection, particleFrontDirection);
 
     for (uint i = 0; i < 4; ++i)
     {
         uint x = uint(i == 1 || i == 3);
         uint y = uint(i == 0 || i == 1);
         
-        gl_Position.xyz = worldPosition + vec3((x * 2.f - 1.f) * 0.1f, (y * 2.f - 1.f) * 0.1f, 0.5f);
+        gl_Position.xyz = worldPosition + paticleSideDirection * (x * 2.f - 1.f) * scale.x + paticleUpDirection * (y * 2.f - 1.f) * scale.y;
         gl_Position.w = 1.f;
         GSOutput.position = gl_Position;
         GSOutput.worldPosition = gl_Position.xyz;
         GSOutput.color = color;
         GSOutput.uv = vec2(x, 1.f - y);
+
+        gl_Position = gl_Position * vpMatrix;
+        gl_Position.y = -gl_Position.y;
     
         EmitVertex();
     }
     
     EndPrimitive();
-
-    //GSOutput output;
-
-    //MetaData metaData = g_MetaBuffer[0];
-    //float4x4 vpMatrix = metaData.vpMatrix;
-    //float3 lensPosition = metaData.lensPosition;
-    //float3 lensUpDirection = metaData.lensUpDirection;
-
-    //float3 worldPosition = input[0].position.xyz;
-    //float3 color = input[0].color.xyz;
-    //float2 scale = input[0].scale.xy;
-
-    //float3 particleFrontDirection = normalize(lensPosition - worldPosition);
-    //float3 paticleSideDirection = cross(particleFrontDirection, lensUpDirection);
-    //float3 paticleUpDirection = cross(paticleSideDirection, particleFrontDirection);
-
-    //for (uint i = 0; i < 4; ++i)
-    //{
-    //    float x = i == 1 || i == 3;
-    //    float y = i == 0 || i == 1;
-    //    output.position.xyz = worldPosition + paticleSideDirection * (x * 2.f - 1.f) * scale.x + paticleUpDirection * (y * 2.f - 1.f) * scale.y;
-    //    output.position.w = 1.f;
-    //    output.worldPosition = output.position.xyz;
-    //    output.position = mul(output.position, vpMatrix);
-    //    output.color = color;
-    //    output.uv = float2(x, 1.f - y);
-    
-    //    TriStream.Append(output);
-    //}
 }

@@ -7,7 +7,6 @@ struct Particle
     vec4 color;
     vec4 scale;
 };
-
 layout(binding = 0) buffer VSInput { Particle g_Input[]; };
 
 layout(location = 0) out Particle VSOutput;

@@ -30,13 +30,19 @@ ParticleRenderSystem::ParticleRenderSystem(VkDevice device, VkPhysicalDevice phy
         vkTools::CreateShaderModule(mDevice, "resources/shaders/Particles_Render_GS.spv", mGeometryShaderModule);
         vkTools::CreateShaderModule(mDevice, "resources/shaders/Particles_Render_PS.spv", mPixelShaderModule);
 
-        VkDescriptorSetLayoutBinding descriptorSetLayoutBinding;
-        descriptorSetLayoutBinding.descriptorCount = 1;
-        descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
-        descriptorSetLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-        descriptorSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        descriptorSetLayoutBinding.binding = 0;
-        std::vector<VkDescriptorSetLayoutBinding> descriptorSetLayoutBindingList{ descriptorSetLayoutBinding };
+        VkDescriptorSetLayoutBinding particleBufferSetLayoutBinding;
+        particleBufferSetLayoutBinding.descriptorCount = 1;
+        particleBufferSetLayoutBinding.pImmutableSamplers = nullptr;
+        particleBufferSetLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        particleBufferSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        particleBufferSetLayoutBinding.binding = 0;
+        VkDescriptorSetLayoutBinding metaBufferSetLayoutBinding;
+        metaBufferSetLayoutBinding.descriptorCount = 1;
+        metaBufferSetLayoutBinding.pImmutableSamplers = nullptr;
+        metaBufferSetLayoutBinding.stageFlags = VK_SHADER_STAGE_GEOMETRY_BIT;
+        metaBufferSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        metaBufferSetLayoutBinding.binding = 1;
+        std::vector<VkDescriptorSetLayoutBinding> descriptorSetLayoutBindingList{ particleBufferSetLayoutBinding, metaBufferSetLayoutBinding };
 
         VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo;
         descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -59,7 +65,7 @@ ParticleRenderSystem::ParticleRenderSystem(VkDevice device, VkPhysicalDevice phy
          
         VkDescriptorPoolSize descriptorPoolSize;
         descriptorPoolSize.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        descriptorPoolSize.descriptorCount = 1;
+        descriptorPoolSize.descriptorCount = descriptorSetLayoutBindingList.size();
         std::vector<VkDescriptorPoolSize> descriptorPoolSizeList{ descriptorPoolSize };
 
         VkDescriptorPoolCreateInfo descriptorPoolCreateInfo;
@@ -85,7 +91,7 @@ ParticleRenderSystem::ParticleRenderSystem(VkDevice device, VkPhysicalDevice phy
             vkTools::CreatePipelineShaderStageCreateInfo(mDevice, mPixelShaderModule, VK_SHADER_STAGE_FRAGMENT_BIT, "main"),
         };
 
-        vkTools::CreateGraphicsPipeline(mDevice, mExtent, pipelineShaderStageCreateInfoList, VK_PRIMITIVE_TOPOLOGY_POINT_LIST, VK_FRONT_FACE_COUNTER_CLOCKWISE, mRenderPass, mPipelineLayout, mPipeline);
+        vkTools::CreateGraphicsPipeline(mDevice, mExtent, pipelineShaderStageCreateInfoList, VK_PRIMITIVE_TOPOLOGY_POINT_LIST, VK_FRONT_FACE_CLOCKWISE, mRenderPass, mPipelineLayout, mPipeline);
     }
 }
 
@@ -110,8 +116,8 @@ void ParticleRenderSystem::Render(VkCommandBuffer commandBuffer, Scene* scene, C
     assert(camera->mpFrameBuffer->mWidth == mExtent.width && camera->mpFrameBuffer->mHeight == mExtent.height);
 
     mMetaData.vpMatrix = glm::transpose(camera->mProjectionMatrix * camera->mViewMatrix);
-    mMetaData.lensPosition = camera->mPosition;
-    mMetaData.lensUpDirection = camera->mUpDirection;
+    mMetaData.lensPosition = glm::vec4(camera->mPosition, 0.f);
+    mMetaData.lensUpDirection = glm::vec4(camera->mUpDirection, 0.f);
     vkTools::WriteBuffer(commandBuffer, mDevice, mMetaDataBufferMemory, &mMetaData, sizeof(MetaData), 0);
 
     VkRenderPassBeginInfo renderPassBeginInfo;
@@ -126,22 +132,41 @@ void ParticleRenderSystem::Render(VkCommandBuffer commandBuffer, Scene* scene, C
     renderPassBeginInfo.clearValueCount = 0;
     renderPassBeginInfo.pClearValues = NULL;
 
-    VkDescriptorBufferInfo mVertexShaderInputDescriptorBufferInfo;
-    VkWriteDescriptorSet mVertexShaderInputWriteDescriptorSet;
-    mVertexShaderInputDescriptorBufferInfo.buffer = scene->mParticleBuffer->GetOutputBuffer()->mBuffer;
-    mVertexShaderInputDescriptorBufferInfo.offset = 0;
-    mVertexShaderInputDescriptorBufferInfo.range = VK_WHOLE_SIZE;
-    mVertexShaderInputWriteDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    mVertexShaderInputWriteDescriptorSet.pNext = NULL;
-    mVertexShaderInputWriteDescriptorSet.dstSet = mPipelineDescriptorSet;
-    mVertexShaderInputWriteDescriptorSet.dstArrayElement = 0;
-    mVertexShaderInputWriteDescriptorSet.descriptorCount = 1;
-    mVertexShaderInputWriteDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    mVertexShaderInputWriteDescriptorSet.pImageInfo = NULL;
-    mVertexShaderInputWriteDescriptorSet.dstBinding = 0;
-    mVertexShaderInputWriteDescriptorSet.pBufferInfo = &mVertexShaderInputDescriptorBufferInfo;
-    vkUpdateDescriptorSets(mDevice, 1, &mVertexShaderInputWriteDescriptorSet, 0, NULL);
+
+    VkDescriptorBufferInfo particleBufferInputDescriptorBufferInfo;
+    VkWriteDescriptorSet particleBufferInputWriteDescriptorSet;
+    particleBufferInputDescriptorBufferInfo.buffer = scene->mParticleBuffer->GetOutputBuffer()->mBuffer;
+    particleBufferInputDescriptorBufferInfo.offset = 0;
+    particleBufferInputDescriptorBufferInfo.range = scene->mParticleBuffer->GetOutputBuffer()->GetSize();
+    particleBufferInputWriteDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    particleBufferInputWriteDescriptorSet.pNext = NULL;
+    particleBufferInputWriteDescriptorSet.dstSet = mPipelineDescriptorSet;
+    particleBufferInputWriteDescriptorSet.dstArrayElement = 0;
+    particleBufferInputWriteDescriptorSet.descriptorCount = 1;
+    particleBufferInputWriteDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    particleBufferInputWriteDescriptorSet.pImageInfo = NULL;
+    particleBufferInputWriteDescriptorSet.dstBinding = 0;
+    particleBufferInputWriteDescriptorSet.pBufferInfo = &particleBufferInputDescriptorBufferInfo;
+
+    VkDescriptorBufferInfo metaBufferInputDescriptorBufferInfo;
+    VkWriteDescriptorSet metaBufferInputWriteDescriptorSet;
+    metaBufferInputDescriptorBufferInfo.buffer = mMetaDataBuffer;
+    metaBufferInputDescriptorBufferInfo.offset = 0;
+    metaBufferInputDescriptorBufferInfo.range = sizeof(MetaData);
+    metaBufferInputWriteDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    metaBufferInputWriteDescriptorSet.pNext = NULL;
+    metaBufferInputWriteDescriptorSet.dstSet = mPipelineDescriptorSet;
+    metaBufferInputWriteDescriptorSet.dstArrayElement = 0;
+    metaBufferInputWriteDescriptorSet.descriptorCount = 1;
+    metaBufferInputWriteDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    metaBufferInputWriteDescriptorSet.pImageInfo = NULL;
+    metaBufferInputWriteDescriptorSet.dstBinding = 1;
+    metaBufferInputWriteDescriptorSet.pBufferInfo = &metaBufferInputDescriptorBufferInfo;
+
+    std::vector<VkWriteDescriptorSet> writeDescriptorSetList{ particleBufferInputWriteDescriptorSet, metaBufferInputWriteDescriptorSet };
+    vkUpdateDescriptorSets(mDevice, writeDescriptorSetList.size(), writeDescriptorSetList.data(), 0, NULL);
     
+
     camera->mpFrameBuffer->TransitionImageLayout(commandBuffer, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipeline);

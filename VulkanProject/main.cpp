@@ -40,10 +40,10 @@ int main()
 
     FrameBuffer frameBuffer(device, physicalDevice, width, height, renderer.mSurfaceFormatKHR.format, renderPass);
     Camera camera(60.f, &frameBuffer);
-    camera.mPosition.z = 0.f;
+    camera.mPosition.z = -5.f;
 
-    int lenX = 1;
-    int lenY = 1;
+    int lenX = 1024;
+    int lenY = 1024;
     Scene scene(device, physicalDevice, lenX * lenY);
     {
         std::vector<Particle> particleList;
