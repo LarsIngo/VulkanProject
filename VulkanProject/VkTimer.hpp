@@ -76,11 +76,13 @@ class VkTimer {
             return static_cast<float>(delta) / 1000000000;
         }
 
+        // Whether timer is active.
         bool IsActive()
         {
             return mActive;
         }
 
+        // Resert timer.
         void Reset(VkCommandBuffer commandBuffer)
         {
             assert(!mActive && !mReset);
