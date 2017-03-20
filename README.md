@@ -1,10 +1,10 @@
 # VulkanProject
 
 ## Building
-Microsoft Visual Studio 2015
-VulkanProject.sln
+Microsoft Visual Studio 2015`
+VulkanProject.sln`
 
 ## Third party libraries
-GLFW
-GLM
-Vulkan API
+GLFW`
+GLM`
+Vulkan API`
