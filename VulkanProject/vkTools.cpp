@@ -620,14 +620,19 @@ void vkTools::EndCommandBuffer( const VkCommandBuffer& command_buffer ) {
 }
 
 
-void vkTools::SubmitCommandBuffer( const VkQueue& queue, VkCommandBuffer& command_buffer ) {
-    VkSubmitInfo submitInfo = {};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &command_buffer;
+void vkTools::SubmitCommandBuffer(const VkQueue& queue, const std::vector<VkCommandBuffer>& command_buffer_list, const std::vector<VkSemaphore>& signal_semaphore_list, VkPipelineStageFlags wait_dst_stage_flags, const std::vector<VkSemaphore>& wait_semaphore_list ) {
+    VkSubmitInfo submit_info;
+    submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submit_info.pNext = NULL;
+    submit_info.waitSemaphoreCount = wait_semaphore_list.size();
+    submit_info.pWaitSemaphores = wait_semaphore_list.data();
+    submit_info.pWaitDstStageMask = &wait_dst_stage_flags;
+    submit_info.commandBufferCount = command_buffer_list.size();
+    submit_info.pCommandBuffers = command_buffer_list.data();
+    submit_info.signalSemaphoreCount = signal_semaphore_list.size();
+    submit_info.pSignalSemaphores = signal_semaphore_list.data();
 
-    VkErrorCheck(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
-    //VkErrorCheck(vkQueueWaitIdle(queue));
+    VkErrorCheck(vkQueueSubmit(queue, 1, &submit_info, VK_NULL_HANDLE));
 }
 
 

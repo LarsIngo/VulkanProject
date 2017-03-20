@@ -1,67 +1,101 @@
 #pragma once
 
 #include <vulkan/vulkan.h>
+#include <assert.h>
+#include <vector>
 
 // Vulkan timer.
 class VkTimer {
     public:
         // Constructor.
-        VkTimer(float& dt, ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext)
+        VkTimer(VkDevice device, VkPhysicalDevice physicalDevice)
         {
-            mDt = &dt;
-            mpDevice = pDevice;
-            mpDeviceContext = pDeviceContext;
+            mDevice = device;
+            mPhysicalDevice = physicalDevice;
+            mActive = false;
+            mReset = true;
+            vkGetPhysicalDeviceProperties(mPhysicalDevice, &mPhysicalDeviceProperties);
 
-            D3D11_QUERY_DESC desc;
-            desc.Query = D3D11_QUERY_TIMESTAMP_DISJOINT;
-            desc.MiscFlags = 0;
-            mpDevice->CreateQuery(&desc, &mDisjoint);
+            uint32_t queueFamilyPropertyCount;
+            vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertyCount, nullptr);
+            std::vector<VkQueueFamilyProperties> queueFamilyPropertyList;
+            queueFamilyPropertyList.resize(queueFamilyPropertyCount);
+            vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertyCount, queueFamilyPropertyList.data());
+            assert(queueFamilyPropertyList[0].timestampValidBits == 64); // Use VK_QUERY_RESULT_64_BIT
 
-            desc.Query = D3D11_QUERY_TIMESTAMP;
-            mpDevice->CreateQuery(&desc, &mStart);
-            mpDevice->CreateQuery(&desc, &mStop);
-
-            // Start.
-            mpDeviceContext->Begin(mDisjoint);
-            mpDeviceContext->End(mStart);
+            VkQueryPoolCreateInfo queryPoolCreateInfo;
+            queryPoolCreateInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
+            queryPoolCreateInfo.pNext = NULL;
+            queryPoolCreateInfo.flags = 0;
+            queryPoolCreateInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
+            queryPoolCreateInfo.queryCount = 1;
+            queryPoolCreateInfo.pipelineStatistics = NULL;
+            vkCreateQueryPool(mDevice, &queryPoolCreateInfo, nullptr, &mStartQuery);
+            vkCreateQueryPool(mDevice, &queryPoolCreateInfo, nullptr, &mStopQuery);
         }
 
         // Destructor.
         ~VkTimer()
         {
-            // Stop.
-            mpDeviceContext->End(mStop);
-            mpDeviceContext->End(mDisjoint);
+            vkDestroyQueryPool(mDevice, mStartQuery, nullptr);
+            vkDestroyQueryPool(mDevice, mStopQuery, nullptr);
+        }
 
-            // Get time.
-            UINT64 startTime = 0;
-            while (mpDeviceContext->GetData(mStart, &startTime, sizeof(startTime), 0) != S_OK);
+        // Start timestamp.
+        void Start(VkCommandBuffer commandBuffer)
+        {
+            assert(!mActive && mReset);
+            mActive = true;
+            mReset = false;
 
-            UINT64 endTime = 0;
-            while (mpDeviceContext->GetData(mStop, &endTime, sizeof(endTime), 0) != S_OK);
+            vkCmdWriteTimestamp(commandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, mStartQuery, 0);
+        }
 
-            D3D11_QUERY_DATA_TIMESTAMP_DISJOINT disjointData;
-            while (mpDeviceContext->GetData(mDisjoint, &disjointData, sizeof(disjointData), 0) != S_OK);
+        // Stop timestamp.
+        void Stop(VkCommandBuffer commandBuffer)
+        {
+            assert(mActive);
+            mActive = false;
 
-            if (disjointData.Disjoint == FALSE)
-            {
-                UINT64 delta = endTime - startTime;
-                double frequency = static_cast<double>(disjointData.Frequency);
-                *mDt = static_cast<float>((delta / frequency));
-            }
+            vkCmdWriteTimestamp(commandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, mStopQuery, 0);
+        }
 
-            mDisjoint->Release();
-            mStart->Release();
-            mStop->Release();
+        // Get time from start to stop in seconds.
+        float GetTime()
+        {
+            uint64_t startTime[2];
+            VkResult startResult = vkGetQueryPoolResults(mDevice, mStartQuery, 0, 1, sizeof(uint64_t) * 2, &startTime, sizeof(uint64_t), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT | VK_QUERY_RESULT_WAIT_BIT);
+            assert(startResult == VK_SUCCESS);
+
+            uint64_t stopTime[2];
+            VkResult stopResult = vkGetQueryPoolResults(mDevice, mStopQuery, 0, 1, sizeof(uint64_t) * 2, &stopTime, sizeof(uint64_t), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT | VK_QUERY_RESULT_WAIT_BIT);
+            assert(stopResult == VK_SUCCESS);
+
+            assert(startTime[1] == 1 && stopTime[1] == 1);
+            uint64_t delta = (stopTime[0] - startTime[0]) * mPhysicalDeviceProperties.limits.timestampPeriod; // Nano seconds.
+            return static_cast<float>(delta) / 1000000000;
+        }
+
+        bool IsActive()
+        {
+            return mActive;
+        }
+
+        void Reset(VkCommandBuffer commandBuffer)
+        {
+            assert(!mActive && !mReset);
+            mReset = true;
+
+            vkCmdResetQueryPool(commandBuffer, mStartQuery, 0, 1);
+            vkCmdResetQueryPool(commandBuffer, mStopQuery, 0, 1);
         }
 
     private:
-        float* mDt;
-        ID3D11Device* mpDevice;
-        ID3D11DeviceContext* mpDeviceContext;
-        ID3D11Query* mDisjoint;
-        ID3D11Query* mStart;
-        ID3D11Query* mStop;
+        VkDevice mDevice;
+        VkPhysicalDevice mPhysicalDevice;
+        VkPhysicalDeviceProperties mPhysicalDeviceProperties;
+        VkQueryPool mStartQuery;
+        VkQueryPool mStopQuery;
+        bool mActive;
+        bool mReset;
 };
-
-#define VKTIMER(dt, pDevice, pDeviceContext) VkTimer vkTimer(dt, pDevice, pDeviceContext)

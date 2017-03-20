@@ -113,8 +113,6 @@ ParticleUpdateSystem::~ParticleUpdateSystem()
 
 void ParticleUpdateSystem::Update(VkCommandBuffer commandBuffer, Scene* scene, float dt)
 {
-    //scene->mParticleBuffer->GetOutputBuffer()->Copy(commandBuffer, scene->mParticleBuffer->GetInputBuffer());
-
     mMetaData.dt = dt;
     mMetaData.particleCount = scene->mParticleCount;
     vkTools::WriteBuffer(commandBuffer, mDevice, mMetaDataBufferMemory, &mMetaData, sizeof(MetaData), 0);
@@ -169,28 +167,7 @@ void ParticleUpdateSystem::Update(VkCommandBuffer commandBuffer, Scene* scene, f
         vkUpdateDescriptorSets(mDevice, writeDescriptorSetList.size(), writeDescriptorSetList.data(), 0, NULL);
     }
     
-
-
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, mPipeline);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, mPipelineLayout, 0, 1, &mPipelineDescriptorSet, 0, NULL);
     vkCmdDispatch(commandBuffer, scene->mParticleCount / 256 + 1, 1, 1);
-
-
-//    //mpDeviceContext->CSSetShader(mComputeShader, NULL, NULL);
-//    //mpDeviceContext->CSSetShaderResources(0, 1, &scene->mParticleBuffer->GetInputBuffer()->mSRV);
-//    //{
-//    //    mUpdateMetaData.dt = dt;
-//    //    mUpdateMetaData.particleCount = scene->mParticleCount;
-//    //    DxHelp::WriteStructuredBuffer<UpdateMetaData>(mpDeviceContext, &mUpdateMetaData, 1, mUpdateMetaDataBuffer);
-//    //    mpDeviceContext->CSSetShaderResources(1, 1, &mUpdateMetaDataBuffer);
-//    //}
-//    //mpDeviceContext->CSSetUnorderedAccessViews(0, 1, &scene->mParticleBuffer->GetOutputBuffer()->mUAV, NULL);
-//
-//    //mpDeviceContext->Dispatch(scene->mParticleCount / 256 + 1,1,1);
-//
-//    //mpDeviceContext->CSSetShader(NULL, NULL, NULL);
-//    //void* p[1] = { NULL };
-//    //mpDeviceContext->CSSetShaderResources(0, 1, (ID3D11ShaderResourceView**)p);
-//    //mpDeviceContext->CSSetShaderResources(1, 1, (ID3D11ShaderResourceView**)p);
-//    //mpDeviceContext->CSSetUnorderedAccessViews(0, 1, (ID3D11UnorderedAccessView**)p, NULL);
 }

@@ -135,9 +135,9 @@ void ParticleRenderSystem::Render(VkCommandBuffer commandBuffer, Scene* scene, C
     {   // vkUpdateDescriptorSets.
         VkDescriptorBufferInfo particleBufferInputDescriptorBufferInfo;
         VkWriteDescriptorSet particleBufferInputWriteDescriptorSet;
-        particleBufferInputDescriptorBufferInfo.buffer = scene->mParticleBuffer->GetOutputBuffer()->mBuffer;
+        particleBufferInputDescriptorBufferInfo.buffer = scene->mParticleBuffer->GetInputBuffer()->mBuffer;
         particleBufferInputDescriptorBufferInfo.offset = 0;
-        particleBufferInputDescriptorBufferInfo.range = scene->mParticleBuffer->GetOutputBuffer()->GetSize();
+        particleBufferInputDescriptorBufferInfo.range = scene->mParticleBuffer->GetInputBuffer()->GetSize();
         particleBufferInputWriteDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         particleBufferInputWriteDescriptorSet.pNext = NULL;
         particleBufferInputWriteDescriptorSet.dstSet = mPipelineDescriptorSet;
@@ -173,34 +173,6 @@ void ParticleRenderSystem::Render(VkCommandBuffer commandBuffer, Scene* scene, C
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout, 0, 1, &mPipelineDescriptorSet, 0, NULL);
     vkCmdDraw(commandBuffer, scene->mParticleCount, 1, 0, 0);
     vkCmdEndRenderPass(commandBuffer);
-
-   /* mpDeviceContext->VSSetShader(mVertexShader, NULL, NULL);
-    mpDeviceContext->GSSetShader(mGeometryShader, NULL, NULL);
-    mpDeviceContext->PSSetShader(mPixelShader, NULL, NULL);
-    mpDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
-    float blendFactor[] = { 0.f, 0.f, 0.f, 0.f };
-    UINT sampleMask = 0xffffffff;
-    mpDeviceContext->OMSetBlendState(mBlendState, blendFactor, sampleMask);
-    mpDeviceContext->OMSetRenderTargets(1, &camera->mpFrameBuffer->mColRTV, NULL);
-    mpDeviceContext->VSSetShaderResources(0, 1, &scene->mParticleBuffer->GetOutputBuffer()->mSRV);
-    {
-        mRenderMetaData.vpMatrix = glm::transpose(camera->mProjectionMatrix * camera->mViewMatrix);
-        mRenderMetaData.lensPosition = camera->mPosition;
-        mRenderMetaData.lensUpDirection = camera->mUpDirection;
-        DxHelp::WriteStructuredBuffer<RenderMetaData>(mpDeviceContext, &mRenderMetaData, 1, mRenderMetaDataBuffer);
-        mpDeviceContext->GSSetShaderResources(0, 1, &mRenderMetaDataBuffer);
-    }
-
-    mpDeviceContext->Draw(scene->mParticleCount, 0);
-
-    mpDeviceContext->VSSetShader(NULL, NULL, NULL);
-    mpDeviceContext->GSSetShader(NULL, NULL, NULL);
-    mpDeviceContext->PSSetShader(NULL, NULL, NULL);
-    mpDeviceContext->OMSetBlendState(NULL, blendFactor, sampleMask);
-    void* p[1] = { NULL };
-    mpDeviceContext->OMSetRenderTargets(1, (ID3D11RenderTargetView**)p, NULL);
-    mpDeviceContext->VSSetShaderResources(0, 1, (ID3D11ShaderResourceView**)p);
-    mpDeviceContext->GSSetShaderResources(0, 1, (ID3D11ShaderResourceView**)p);*/
 
     scene->mParticleBuffer->Swap();
 }

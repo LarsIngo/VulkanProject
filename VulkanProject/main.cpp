@@ -4,12 +4,15 @@
 
 #include "VkRenderer.hpp"
 #include "CPUTimer.hpp"
+#include "VkTimer.hpp"
 #include "InputManager.hpp"
 #include "Camera.hpp"
 #include "vkTools.hpp"
 #include "ParticleRenderSystem.hpp"
 #include "ParticleUpdateSystem.hpp"
 #include "Scene.hpp"
+
+//#define SYNC_COMPUTE_GRAPHICS
 
 int main()
 {
@@ -24,6 +27,7 @@ int main()
     VkCommandPool graphicsCommandPool = renderer.mGraphicsCommandPool;
     VkCommandPool computeCommandPool = renderer.mComputeCommandPool;
     VkQueue graphicsQueue = renderer.mGraphicsQueue;
+
     VkQueue computeQueue = renderer.mComputeQueue;
     VkRenderPass renderPass = renderer.mRenderPass;
     VkCommandBuffer graphicsCommandBuffer;
@@ -67,51 +71,84 @@ int main()
     // --- INIT --- //
 
     // +++ MAIN LOOP +++ //
-    float dt = 1.f;
-    while (renderer.Running())
     {
-        std::cout << "CPU TIMER: " << 1000.f * dt << " ms | FPS: " << 1.f / dt << std::endl;
-        glm::clamp(dt, 1.f / 6000.f, 1.f / 60.f);
-        CPUTIMER(dt);
+        float dt = 1.f;
+        VkTimer gpuComputeTimer(device, physicalDevice);
+        VkTimer gpuGraphicsTimer(device, physicalDevice);
+        while (renderer.Running())
+        {
+            glm::clamp(dt, 1.f / 6000.f, 1.f / 60.f);
+            bool cpuProfile = inputManager.KeyPressed(GLFW_KEY_F1);
+            bool gpuProfile = inputManager.KeyPressed(GLFW_KEY_F2);
+            {
+                CPUTIMER(dt);
 
-        // +++ UPDATE +++ //
-        vkTools::BeginCommandBuffer(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, computeCommandBuffer);
+                // +++ UPDATE +++ //
+                vkTools::WaitQueue(computeQueue);
+                vkTools::ResetCommandBuffer(computeCommandBuffer);
+                vkTools::BeginCommandBuffer(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, computeCommandBuffer);
+                if (gpuProfile) gpuComputeTimer.Start(computeCommandBuffer);
 
-        camera.Update(20.f, 2.f, dt, &inputManager);
-        particleUpdateSystem.Update(computeCommandBuffer, &scene, dt);
+                camera.Update(20.f, 2.f, dt, &inputManager);
+                particleUpdateSystem.Update(computeCommandBuffer, &scene, dt);
 
-        vkTools::EndCommandBuffer(computeCommandBuffer);
-        vkTools::SubmitCommandBuffer(computeQueue, computeCommandBuffer);
-        vkTools::WaitQueue(computeQueue);
-        vkTools::ResetCommandBuffer(computeCommandBuffer);
-        // --- UPDATE --- //
+                if (gpuProfile) gpuComputeTimer.Stop(computeCommandBuffer);
+                vkTools::EndCommandBuffer(computeCommandBuffer);
+                vkTools::SubmitCommandBuffer(computeQueue, { computeCommandBuffer }, { renderer.mComputeCompleteSemaphore });
+#ifdef SYNC_COMPUTE_GRAPHICS
+                vkTools::WaitQueue(computeQueue);
+#endif
+                // --- UPDATE --- //
 
-        // +++ RENDER +++ //
-        vkTools::BeginCommandBuffer(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, graphicsCommandBuffer);
+                // +++ RENDER +++ //
+                FrameBuffer* backBuffer = renderer.SwapBackBuffer();
 
-        FrameBuffer* backBuffer = renderer.SwapBackBuffer();
-        backBuffer->TransitionImageLayout(graphicsCommandBuffer, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+                vkTools::WaitQueue(graphicsQueue);
+                vkTools::ResetCommandBuffer(graphicsCommandBuffer);
+                vkTools::BeginCommandBuffer(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, graphicsCommandBuffer);
+                if (gpuProfile) gpuGraphicsTimer.Start(graphicsCommandBuffer);
 
+                backBuffer->TransitionImageLayout(graphicsCommandBuffer, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+                camera.mpFrameBuffer->Clear(graphicsCommandBuffer, 0.2f, 0.2f, 0.2f);
+                particleRenderSystem.Render(graphicsCommandBuffer, &scene, &camera);
+                backBuffer->Copy(graphicsCommandBuffer, camera.mpFrameBuffer);
+                backBuffer->TransitionImageLayout(graphicsCommandBuffer, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
-        camera.mpFrameBuffer->Clear(graphicsCommandBuffer, 0.2f, 0.2f, 0.2f);
-        particleRenderSystem.Render(graphicsCommandBuffer, &scene, &camera);
+                if (gpuProfile) gpuGraphicsTimer.Stop(graphicsCommandBuffer);
+                vkTools::EndCommandBuffer(graphicsCommandBuffer);
+                vkTools::SubmitCommandBuffer(graphicsQueue, { graphicsCommandBuffer }, {}, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, { renderer.mComputeCompleteSemaphore });
+#ifdef SYNC_COMPUTE_GRAPHICS
+                vkTools::WaitQueue(graphicsQueue);
+#endif
+                // --- RENDER --- //
 
-
-        backBuffer->Copy(graphicsCommandBuffer, camera.mpFrameBuffer);
-        backBuffer->TransitionImageLayout(graphicsCommandBuffer, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-        vkTools::EndCommandBuffer(graphicsCommandBuffer);
-        vkTools::SubmitCommandBuffer(graphicsQueue, graphicsCommandBuffer);
-        vkTools::WaitQueue(graphicsQueue);
-        vkTools::ResetCommandBuffer(graphicsCommandBuffer);
-        // --- RENDER --- //
-
-        // +++ PRESENET +++ //
-        renderer.PresentBackBuffer();
-        // --- PRESENET --- //
+                // +++ PRESENET +++ //
+                renderer.PresentBackBuffer();
+                // --- PRESENET --- //
+            }
+            // +++ PERFORMANCE OUTPUT +++ //
+            if (cpuProfile)
+            {
+                std::cout << "CPU(Delta time): " << 1000.f * dt << " ms | FPS: " << 1.f / dt << std::endl;
+            }
+            if (gpuProfile)
+            {
+                float computeTime = 1000.f * gpuComputeTimer.GetTime();
+                float graphicsTime = 1000.f * gpuGraphicsTimer.GetTime();
+                std::cout << "GPU(Total) : " << computeTime + graphicsTime << " ms | GPU(Compute): " << computeTime << " ms | GPU(Graphics) : " << graphicsTime << " ms" << std::endl;
+                VkCommandBuffer resetTimerCommandBuffer = vkTools::BeginSingleTimeCommand(device, renderer.mTransferCommandPool);
+                gpuComputeTimer.Reset(resetTimerCommandBuffer);
+                gpuGraphicsTimer.Reset(resetTimerCommandBuffer);
+                vkTools::EndSingleTimeCommand(device, renderer.mTransferCommandPool, renderer.mTransferQueue, resetTimerCommandBuffer);
+            }
+            // --- PERFORMANCE OUTPUT --- //
+        }
     }
     // --- MAIN LOOP --- //
 
     // +++ SHUTDOWN +++ //
+    vkTools::WaitQueue(graphicsQueue);
+    vkTools::WaitQueue(computeQueue);
     vkTools::FreeCommandBuffer(device, graphicsCommandPool, graphicsCommandBuffer);
     vkTools::FreeCommandBuffer(device, computeCommandPool, computeCommandBuffer);
     // --- SHUTDOWN --- //

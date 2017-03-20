@@ -23,6 +23,7 @@ void Scene::AddParticles(VkCommandBuffer commandBuffer, std::vector<Particle>& p
     unsigned int bytes = particleCount * sizeof(Particle);
 
     mParticleBuffer->GetInputBuffer()->Write(commandBuffer, particleList.data(), bytes, offset);
+    mParticleBuffer->GetOutputBuffer()->Write(commandBuffer, particleList.data(), bytes, offset);
 
     mParticleCount += particleCount;
 }

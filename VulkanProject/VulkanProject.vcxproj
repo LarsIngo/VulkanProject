@@ -164,6 +164,7 @@
     <ClInclude Include="StorageBuffer.hpp" />
     <ClInclude Include="StorageSwapBuffer.hpp" />
     <ClInclude Include="VkRenderer.hpp" />
+    <ClInclude Include="VkTimer.hpp" />
     <ClInclude Include="vkTools.hpp" />
   </ItemGroup>
   <ItemGroup>

@@ -1,6 +1,8 @@
 #pragma once
 
+#ifdef _DEBUG
 #define BUILD_ENABLE_VULKAN_DEBUG
+#endif
 
 #include <vulkan/vulkan.h>
 

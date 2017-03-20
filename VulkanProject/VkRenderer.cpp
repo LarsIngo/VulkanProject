@@ -329,7 +329,10 @@ void VkRenderer::InitialiseQueues()
 
 void VkRenderer::DeInitialiseQueues()
 {
-
+    vkTools::WaitQueue(mGraphicsQueue);
+    vkTools::WaitQueue(mComputeQueue);
+    vkTools::WaitQueue(mTransferQueue);
+    vkTools::WaitQueue(mPresentQueue);
 }
 
 void VkRenderer::InitialiseSwapchainKHR()

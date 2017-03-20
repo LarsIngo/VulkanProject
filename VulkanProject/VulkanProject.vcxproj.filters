@@ -90,6 +90,9 @@
     <ClInclude Include="ParticleUpdateSystem.hpp">
       <Filter>Particle</Filter>
     </ClInclude>
+    <ClInclude Include="VkTimer.hpp">
+      <Filter>Tools</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="resources\shaders\Particles_Update_CS.comp">
