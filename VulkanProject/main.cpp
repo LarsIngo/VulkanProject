@@ -72,12 +72,14 @@ int main()
 
     // +++ MAIN LOOP +++ //
     {
-        float dt = 1.f;
+        float dt = 0.f;
+        float totalTime = 0.f;
+        unsigned int frameCount = 0;
         VkTimer gpuComputeTimer(device, physicalDevice);
         VkTimer gpuGraphicsTimer(device, physicalDevice);
         while (renderer.Running())
         {
-            glm::clamp(dt, 1.f / 6000.f, 1.f / 60.f);
+            //glm::clamp(dt, 1.f / 6000.f, 1.f / 60.f);
             bool cpuProfile = inputManager.KeyPressed(GLFW_KEY_F1);
             bool gpuProfile = inputManager.KeyPressed(GLFW_KEY_F2);
             {
@@ -126,7 +128,9 @@ int main()
                 renderer.PresentBackBuffer();
                 // --- PRESENET --- //
             }
-            // +++ PERFORMANCE OUTPUT +++ //
+            // +++ PROFILING +++ //
+            ++frameCount;
+            totalTime += dt;
             if (cpuProfile)
             {
                 std::cout << "CPU(Delta time): " << 1000.f * dt << " ms | FPS: " << 1.f / dt << std::endl;
@@ -141,7 +145,11 @@ int main()
                 gpuGraphicsTimer.Reset(resetTimerCommandBuffer);
                 vkTools::EndSingleTimeCommand(device, renderer.mTransferCommandPool, renderer.mTransferQueue, resetTimerCommandBuffer);
             }
-            // --- PERFORMANCE OUTPUT --- //
+            if (inputManager.KeyPressed(GLFW_KEY_F3))
+            {
+                std::cout << "CPU(Average delta time) : " << totalTime / frameCount * 1000.f << " ms" << std::endl;
+            }
+            // --- PROFILING --- //
         }
     }
     // --- MAIN LOOP --- //
