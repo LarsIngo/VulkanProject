@@ -93,6 +93,9 @@
     <ClInclude Include="VkTimer.hpp">
       <Filter>Tools</Filter>
     </ClInclude>
+    <ClInclude Include="Profiler.hpp">
+      <Filter>Tools</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="resources\shaders\Particles_Update_CS.comp">

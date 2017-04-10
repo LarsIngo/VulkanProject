@@ -160,6 +160,7 @@
     <ClInclude Include="Particle.hpp" />
     <ClInclude Include="ParticleRenderSystem.hpp" />
     <ClInclude Include="ParticleUpdateSystem.hpp" />
+    <ClInclude Include="Profiler.hpp" />
     <ClInclude Include="Scene.hpp" />
     <ClInclude Include="StorageBuffer.hpp" />
     <ClInclude Include="StorageSwapBuffer.hpp" />

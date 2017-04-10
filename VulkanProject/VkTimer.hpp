@@ -13,7 +13,10 @@ class VkTimer {
             mDevice = device;
             mPhysicalDevice = physicalDevice;
             mActive = false;
+            mAccurateTime = false;
             mReset = true;
+            mDeltaTime = 0;
+            mBeginTime = 0;
             vkGetPhysicalDeviceProperties(mPhysicalDevice, &mPhysicalDeviceProperties);
 
             uint32_t queueFamilyPropertyCount;
@@ -47,6 +50,7 @@ class VkTimer {
             assert(!mActive && mReset);
             mActive = true;
             mReset = false;
+            mAccurateTime = false;
 
             vkCmdWriteTimestamp(commandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, mStartQuery, 0);
         }
@@ -60,9 +64,25 @@ class VkTimer {
             vkCmdWriteTimestamp(commandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, mStopQuery, 0);
         }
 
-        // Get time from start to stop in seconds.
-        float GetTime()
+        // Get time from start to stop in nano seconds.
+        uint64_t GetDeltaTime()
         {
+            CalculateTime();
+            return mDeltaTime;
+        }
+
+        uint64_t GetBeginTime()
+        {
+            CalculateTime();
+            return mBeginTime;
+        }
+
+        // Time in nano secounds.
+        void CalculateTime()
+        {
+            if (mAccurateTime) return;
+            mAccurateTime = true;
+
             uint64_t startTime[2];
             VkResult startResult = vkGetQueryPoolResults(mDevice, mStartQuery, 0, 1, sizeof(uint64_t) * 2, &startTime, sizeof(uint64_t), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT | VK_QUERY_RESULT_WAIT_BIT);
             assert(startResult == VK_SUCCESS);
@@ -72,9 +92,11 @@ class VkTimer {
             assert(stopResult == VK_SUCCESS);
 
             assert(startTime[1] == 1 && stopTime[1] == 1);
-            uint64_t delta = (stopTime[0] - startTime[0]) * mPhysicalDeviceProperties.limits.timestampPeriod; // Nano seconds.
-            return static_cast<float>(delta) / 1000000000;
+
+            mDeltaTime = (stopTime[0] - startTime[0]) * static_cast<double>(mPhysicalDeviceProperties.limits.timestampPeriod);
+            mBeginTime = startTime[0] * static_cast<double>(mPhysicalDeviceProperties.limits.timestampPeriod);
         }
+
 
         // Whether timer is active.
         bool IsActive()
@@ -99,5 +121,8 @@ class VkTimer {
         VkQueryPool mStartQuery;
         VkQueryPool mStopQuery;
         bool mActive;
+        bool mAccurateTime;
         bool mReset;
+        uint64_t mDeltaTime;
+        uint64_t mBeginTime;
 };
