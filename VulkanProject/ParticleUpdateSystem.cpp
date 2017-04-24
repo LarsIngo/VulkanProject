@@ -169,5 +169,5 @@ void ParticleUpdateSystem::Update(VkCommandBuffer commandBuffer, Scene* scene, f
     
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, mPipeline);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, mPipelineLayout, 0, 1, &mPipelineDescriptorSet, 0, NULL);
-    vkCmdDispatch(commandBuffer, static_cast<uint32_t>(ceil(scene->mParticleCount / 256.f)), 1, 1);
+    vkCmdDispatch(commandBuffer, static_cast<uint32_t>(ceil(scene->mParticleCount / 128.f)), 1, 1);
 }
