@@ -122,6 +122,8 @@ int main()
                 // --- RENDER --- //
 
                 // +++ PRESENET +++ //
+                vkTools::WaitQueue(computeQueue);
+                vkTools::WaitQueue(graphicsQueue);
                 renderer.PresentBackBuffer();
                 // --- PRESENET --- //
             }
