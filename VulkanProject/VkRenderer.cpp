@@ -281,6 +281,9 @@ void VkRenderer::InitialiseDevice()
     mGraphicsFamilyIndex = vkTools::FindFamilyIndex(mPhysicalDevice, VK_QUEUE_GRAPHICS_BIT);
     mComputeFamilyIndex = vkTools::FindFamilyIndex(mPhysicalDevice, VK_QUEUE_COMPUTE_BIT);
     mTransferFamilyIndex = vkTools::FindFamilyIndex(mPhysicalDevice, VK_QUEUE_TRANSFER_BIT);
+    std::cout << "Graphics familty index: " << mGraphicsFamilyIndex << std::endl;
+    std::cout << "Compute familty index: " << mComputeFamilyIndex << std::endl;
+    std::cout << "Transfer familty index: " << mTransferFamilyIndex << std::endl;
 
     std::map<uint32_t, uint32_t> familyIndexMap;
     familyIndexMap[mGraphicsFamilyIndex] = mGraphicsFamilyIndex;

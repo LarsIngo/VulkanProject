@@ -145,7 +145,6 @@ int main()
                 std::cout << "GPU(Total) : " << computeTime + graphicsTime << " ms | GPU(Compute): " << computeTime << " ms | GPU(Graphics) : " << graphicsTime << " ms" << std::endl;
                 profiler.Rectangle(gpuComputeTimer.GetBeginTime(), 1, gpuComputeTimer.GetDeltaTime(), 1, 0.f, 0.f, 1.f);
                 profiler.Rectangle(gpuGraphicsTimer.GetBeginTime(), 0, gpuGraphicsTimer.GetDeltaTime(), 1, 0.f, 1.f, 0.f);
-                std::cout << gpuGraphicsTimer.GetBeginTime() << std::endl;
                 VkCommandBuffer resetTimerCommandBuffer = vkTools::BeginSingleTimeCommand(device, renderer.mTransferCommandPool);
                 gpuComputeTimer.Reset(resetTimerCommandBuffer);
                 gpuGraphicsTimer.Reset(resetTimerCommandBuffer);
