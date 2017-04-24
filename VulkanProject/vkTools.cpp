@@ -246,11 +246,17 @@ uint32_t vkTools::FindFamilyIndex( const VkPhysicalDevice& gpu, VkQueueFlagBits 
     vkGetPhysicalDeviceQueueFamilyProperties( gpu, &queue_family_count, nullptr );
     std::vector<VkQueueFamilyProperties> queue_family_properties_list( queue_family_count );
     vkGetPhysicalDeviceQueueFamilyProperties( gpu, &queue_family_count, queue_family_properties_list.data() );
+    return 0;
 
-    for ( uint32_t i = 0; i < static_cast<uint32_t>(queue_family_properties_list.size()); ++i )
-        if ( queue_family_properties_list[ i ].queueCount > 0 && queue_family_properties_list[ i ].queueFlags & queue_flag_bit)
+    for (uint32_t i = 0; i < static_cast<uint32_t>(queue_family_properties_list.size()); ++i)
+    {
+        assert(queue_family_properties_list[i].timestampValidBits);
+        uint32_t queueCount = queue_family_properties_list[i].queueCount;
+        VkQueueFlags queueFlags = queue_family_properties_list[i].queueCount;
+        if (queueCount > 0 && queueFlags & queue_flag_bit)
             return i;
-
+    }
+       
     MsgAssert(1, 0, "Vulkan runtime error. VKERROR: Supported queue family not found.");
 
     return 0;

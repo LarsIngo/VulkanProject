@@ -278,6 +278,11 @@ void VkRenderer::InitialiseDevice()
 
     std::vector<const char*> enabledExtensionList = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
+    std::map<uint32_t, uint32_t> familyIndexMap;
+
+    // https://gist.github.com/sheredom/523f02bbad2ae397d7ed255f3f3b5a7f
+    // http://www.duskborn.com/a-simple-vulkan-compute-example/
+
     mGraphicsFamilyIndex = vkTools::FindFamilyIndex(mPhysicalDevice, VK_QUEUE_GRAPHICS_BIT);
     mComputeFamilyIndex = vkTools::FindFamilyIndex(mPhysicalDevice, VK_QUEUE_COMPUTE_BIT);
     mTransferFamilyIndex = vkTools::FindFamilyIndex(mPhysicalDevice, VK_QUEUE_TRANSFER_BIT);
@@ -285,25 +290,28 @@ void VkRenderer::InitialiseDevice()
     std::cout << "Compute familty index: " << mComputeFamilyIndex << std::endl;
     std::cout << "Transfer familty index: " << mTransferFamilyIndex << std::endl;
 
-    std::map<uint32_t, uint32_t> familyIndexMap;
     familyIndexMap[mGraphicsFamilyIndex] = mGraphicsFamilyIndex;
     familyIndexMap[mComputeFamilyIndex] = mComputeFamilyIndex;
     familyIndexMap[mTransferFamilyIndex] = mTransferFamilyIndex;
-    assert(familyIndexMap.size() == 1);
-
-    float queuePriorities{ 1.f };
-    VkDeviceQueueCreateInfo deviceQueueCreateInfo;
-    deviceQueueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    deviceQueueCreateInfo.queueCount = 1;
-    deviceQueueCreateInfo.pQueuePriorities = &queuePriorities;
-    deviceQueueCreateInfo.queueFamilyIndex = mGraphicsFamilyIndex;
-    deviceQueueCreateInfo.pNext = NULL;
-    deviceQueueCreateInfo.flags = 0;
+    
+    std::vector<VkDeviceQueueCreateInfo> device_queue_create_info;
+    for (std::size_t i = 0; i < familyIndexMap.size(); ++i)
+    {
+        float queuePriorities{ 1.f };
+        VkDeviceQueueCreateInfo deviceQueueCreateInfo;
+        deviceQueueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        deviceQueueCreateInfo.queueCount = 1;
+        deviceQueueCreateInfo.pQueuePriorities = &queuePriorities;
+        deviceQueueCreateInfo.queueFamilyIndex = familyIndexMap[i];
+        deviceQueueCreateInfo.pNext = NULL;
+        deviceQueueCreateInfo.flags = 0;
+        device_queue_create_info.push_back(deviceQueueCreateInfo);
+    }
 
     VkDeviceCreateInfo deviceCreateInfo;
     deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    deviceCreateInfo.queueCreateInfoCount = 1;
-    deviceCreateInfo.pQueueCreateInfos = &deviceQueueCreateInfo;
+    deviceCreateInfo.queueCreateInfoCount = device_queue_create_info.size();
+    deviceCreateInfo.pQueueCreateInfos = device_queue_create_info.data();
     deviceCreateInfo.enabledLayerCount = NULL;
     deviceCreateInfo.ppEnabledLayerNames = NULL;
     deviceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(enabledExtensionList.size());
