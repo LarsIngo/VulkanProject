@@ -288,11 +288,14 @@ void VkRenderer::InitialiseDevice()
     }
 
     // https://gist.github.com/sheredom/523f02bbad2ae397d7ed255f3f3b5a7f
-
     vkTools::PrintFamilyIndices(mPhysicalDevice);
-    mGraphicsFamilyIndex = vkTools::FindGraphicsFamilyIndex(mPhysicalDevice);
-    mComputeFamilyIndex = vkTools::FindComputeFamilyIndex(mPhysicalDevice);
-    mTransferFamilyIndex = vkTools::FindTransferFamilyIndex(mPhysicalDevice);
+
+    uint32_t graphicsQueueCount;
+    vkTools::FindGraphicsFamily(mPhysicalDevice, mGraphicsFamilyIndex, graphicsQueueCount);
+    uint32_t computeQueueCount;
+    vkTools::FindComputeFamily(mPhysicalDevice, mComputeFamilyIndex, computeQueueCount);
+    uint32_t transferQueueCount;
+    vkTools::FindTransferFamily(mPhysicalDevice, mTransferFamilyIndex, transferQueueCount);
 
     std::cout << "Graphics familty index: " << mGraphicsFamilyIndex << std::endl;
     std::cout << "Compute familty index: " << mComputeFamilyIndex << std::endl;
@@ -302,13 +305,21 @@ void VkRenderer::InitialiseDevice()
     familyIndexMap[mGraphicsFamilyIndex] = mGraphicsFamilyIndex;
     familyIndexMap[mComputeFamilyIndex] = mComputeFamilyIndex;
     familyIndexMap[mTransferFamilyIndex] = mTransferFamilyIndex;
+
+    std::map<uint32_t, uint32_t> familyQueueCountMap;
+    if (familyQueueCountMap.find(mGraphicsFamilyIndex) == familyQueueCountMap.end())
+        familyQueueCountMap[mGraphicsFamilyIndex] = graphicsQueueCount;
+    if (familyQueueCountMap.find(mComputeFamilyIndex) == familyQueueCountMap.end())
+        familyQueueCountMap[mComputeFamilyIndex] = computeQueueCount;
+    if (familyQueueCountMap.find(mTransferFamilyIndex) == familyQueueCountMap.end())
+        familyQueueCountMap[mTransferFamilyIndex] = transferQueueCount;
     
     std::vector<VkDeviceQueueCreateInfo> device_queue_create_info;
     std::map<uint32_t, std::vector<float>> queue_Priorities_map;
     for (std::size_t i = 0; i < familyIndexMap.size(); ++i)
     {
         uint32_t familyIndex = familyIndexMap[i];
-        uint32_t queueCount = familyIndex == 0 ? 16 : 1;
+        uint32_t queueCount = familyQueueCountMap[familyIndex];// familyIndex == 0 ? 16 : 1;
         std::vector<float>& queue_Priorities_list = queue_Priorities_map[familyIndex];
         for (uint32_t n = 0; n < queueCount; ++n)
             queue_Priorities_list.push_back(1.f);

@@ -262,7 +262,7 @@ void vkTools::CreateGraphicsPipeline(
     //return 0;
 //}
 
-uint32_t vkTools::FindGraphicsFamilyIndex(const VkPhysicalDevice& gpu)
+void vkTools::FindGraphicsFamily(const VkPhysicalDevice& gpu, uint32_t& family_index, uint32_t& queue_count)
 {
     uint32_t queueFamilyPropertiesCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queueFamilyPropertiesCount, 0);
@@ -277,16 +277,16 @@ uint32_t vkTools::FindGraphicsFamilyIndex(const VkPhysicalDevice& gpu)
         const VkQueueFlags maskedFlags = (~VK_QUEUE_SPARSE_BINDING_BIT & queueFamilyProperties[i].queueFlags);
 
         if (VK_QUEUE_GRAPHICS_BIT & maskedFlags) {
-            return i;
+            queue_count = queueFamilyProperties[i].queueCount;
+            family_index = i;
+            return;
         }
     }
 
     MsgAssert(1, 0, "Vulkan runtime error. VKERROR: Supported queue family not found.");
-
-    return 0;
 }
 
-uint32_t vkTools::FindTransferFamilyIndex(const VkPhysicalDevice& gpu)
+void vkTools::FindTransferFamily(const VkPhysicalDevice& gpu, uint32_t& family_index, uint32_t& queue_count)
 {
     uint32_t queueFamilyPropertiesCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queueFamilyPropertiesCount, 0);
@@ -303,7 +303,9 @@ uint32_t vkTools::FindTransferFamilyIndex(const VkPhysicalDevice& gpu)
 
         if (!((VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT) & maskedFlags) &&
             (VK_QUEUE_TRANSFER_BIT & maskedFlags)) {
-            return i;
+            queue_count = queueFamilyProperties[i].queueCount;
+            family_index = i;
+            return;
         }
     }
 
@@ -314,7 +316,9 @@ uint32_t vkTools::FindTransferFamilyIndex(const VkPhysicalDevice& gpu)
         const VkQueueFlags maskedFlags = (~VK_QUEUE_SPARSE_BINDING_BIT & queueFamilyProperties[i].queueFlags);
 
         if (!(VK_QUEUE_GRAPHICS_BIT & maskedFlags) && (VK_QUEUE_COMPUTE_BIT & maskedFlags)) {
-            return i;
+            queueFamilyProperties[i].queueCount = queue_count;
+            family_index = i;
+            return;
         }
     }
 
@@ -324,16 +328,16 @@ uint32_t vkTools::FindTransferFamilyIndex(const VkPhysicalDevice& gpu)
         const VkQueueFlags maskedFlags = (~VK_QUEUE_SPARSE_BINDING_BIT & queueFamilyProperties[i].queueFlags);
 
         if ((VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT | VK_QUEUE_TRANSFER_BIT) & maskedFlags) {
-            return i;
+            queue_count = queueFamilyProperties[i].queueCount;
+            family_index = i;
+            return;
         }
     }
 
     MsgAssert(1, 0, "Vulkan runtime error. VKERROR: Supported queue family not found.");
-
-    return 0;
 }
 
-uint32_t vkTools::FindComputeFamilyIndex(const VkPhysicalDevice& gpu)
+void vkTools::FindComputeFamily(const VkPhysicalDevice& gpu, uint32_t& family_index, uint32_t& queue_count)
 {
     uint32_t queueFamilyPropertiesCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queueFamilyPropertiesCount, 0);
@@ -350,7 +354,9 @@ uint32_t vkTools::FindComputeFamilyIndex(const VkPhysicalDevice& gpu)
             queueFamilyProperties[i].queueFlags);
 
         if (!(VK_QUEUE_GRAPHICS_BIT & maskedFlags) && (VK_QUEUE_COMPUTE_BIT & maskedFlags)) {
-            return i;
+            queue_count = queueFamilyProperties[i].queueCount;
+            family_index = i;
+            return;
         }
     }
 
@@ -361,13 +367,13 @@ uint32_t vkTools::FindComputeFamilyIndex(const VkPhysicalDevice& gpu)
             queueFamilyProperties[i].queueFlags);
 
         if (VK_QUEUE_COMPUTE_BIT & maskedFlags) {
-            return i;
+            queue_count = queueFamilyProperties[i].queueCount;
+            family_index = i;
+            return;
         }
     }
 
     MsgAssert(1, 0, "Vulkan runtime error. VKERROR: Supported queue family not found.");
-
-    return 0;
 }
 
 void vkTools::PrintFamilyIndices(const VkPhysicalDevice& gpu)

@@ -48,10 +48,10 @@ namespace vkTools
         VkPipeline& graphics_pipeline );
 
     // https://gist.github.com/sheredom/523f02bbad2ae397d7ed255f3f3b5a7f
-    uint32_t FindGraphicsFamilyIndex( const VkPhysicalDevice& gpu );
-    uint32_t FindTransferFamilyIndex( const VkPhysicalDevice& gpu );
-    uint32_t FindComputeFamilyIndex( const VkPhysicalDevice& gpu );
-    void PrintFamilyIndices(const VkPhysicalDevice& gpu);
+    void FindGraphicsFamily( const VkPhysicalDevice& gpu, uint32_t& family_index, uint32_t& queue_count );
+    void FindTransferFamily( const VkPhysicalDevice& gpu, uint32_t& family_index, uint32_t& queue_count );
+    void FindComputeFamily( const VkPhysicalDevice& gpu, uint32_t& family_index, uint32_t& queue_count );
+    void PrintFamilyIndices( const VkPhysicalDevice& gpu );
 
     uint32_t FindPresentFamilyIndex( const VkPhysicalDevice& gpu, const VkSurfaceKHR& surface );
     uint32_t FindMemoryType( const VkPhysicalDevice& gpu, const uint32_t& type_filter, const VkMemoryPropertyFlags& memory_property_flags );
