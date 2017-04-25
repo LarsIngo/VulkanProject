@@ -47,7 +47,9 @@ namespace vkTools
         const VkPipelineLayout& pipeline_layout,
         VkPipeline& graphics_pipeline );
 
-    uint32_t FindFamilyIndex( const VkPhysicalDevice& gpu, VkQueueFlagBits queue_flag_bit );
+    uint32_t FindGraphicsFamilyIndex( const VkPhysicalDevice& gpu );
+    uint32_t FindTransferFamilyIndex( const VkPhysicalDevice& gpu );
+    uint32_t FindComputeFamilyIndex( const VkPhysicalDevice& gpu );
     uint32_t FindPresentFamilyIndex( const VkPhysicalDevice& gpu, const VkSurfaceKHR& surface );
     uint32_t FindMemoryType( const VkPhysicalDevice& gpu, const uint32_t& type_filter, const VkMemoryPropertyFlags& memory_property_flags );
     VkFormat FindSupportedFormat( const VkPhysicalDevice& gpu, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features );

@@ -240,46 +240,154 @@ void vkTools::CreateGraphicsPipeline(
 }
 
 
-uint32_t vkTools::FindFamilyIndex( const VkPhysicalDevice& gpu, VkQueueFlagBits queue_flag_bit )
-{
-    uint32_t queue_family_count = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties( gpu, &queue_family_count, nullptr );
-    std::vector<VkQueueFamilyProperties> queue_family_properties_list( queue_family_count );
-    vkGetPhysicalDeviceQueueFamilyProperties( gpu, &queue_family_count, queue_family_properties_list.data() );
-    return 0;
+//uint32_t vkTools::FindFamilyIndex( const VkPhysicalDevice& gpu, VkQueueFlagBits queue_flag_bit )
+//{
+    //uint32_t queue_family_count = 0;
+    //vkGetPhysicalDeviceQueueFamilyProperties( gpu, &queue_family_count, nullptr );
+    //std::vector<VkQueueFamilyProperties> queue_family_properties_list( queue_family_count );
+    //vkGetPhysicalDeviceQueueFamilyProperties( gpu, &queue_family_count, queue_family_properties_list.data() );
+    //return 0;
 
-    for (uint32_t i = 0; i < static_cast<uint32_t>(queue_family_properties_list.size()); ++i)
-    {
-        assert(queue_family_properties_list[i].timestampValidBits);
-        uint32_t queueCount = queue_family_properties_list[i].queueCount;
-        VkQueueFlags queueFlags = queue_family_properties_list[i].queueCount;
-        if (queueCount > 0 && queueFlags & queue_flag_bit)
+    //for (uint32_t i = 0; i < static_cast<uint32_t>(queue_family_properties_list.size()); ++i)
+    //{
+    //    assert(queue_family_properties_list[i].timestampValidBits);
+    //    uint32_t queueCount = queue_family_properties_list[i].queueCount;
+    //    VkQueueFlags queueFlags = queue_family_properties_list[i].queueCount;
+    //    if (queueCount > 0 && queueFlags & queue_flag_bit)
+    //        return i;
+    //}
+    //   
+    //MsgAssert(1, 0, "Vulkan runtime error. VKERROR: Supported queue family not found.");
+
+    //return 0;
+//}
+
+uint32_t vkTools::FindGraphicsFamilyIndex(const VkPhysicalDevice& gpu)
+{
+    uint32_t queueFamilyPropertiesCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queueFamilyPropertiesCount, 0);
+
+    VkQueueFamilyProperties* const queueFamilyProperties = (VkQueueFamilyProperties*)_alloca(
+        sizeof(VkQueueFamilyProperties) * queueFamilyPropertiesCount);
+
+    vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queueFamilyPropertiesCount, queueFamilyProperties);
+
+    for (uint32_t i = 0; i < queueFamilyPropertiesCount; i++) {
+        // mask out the sparse binding bit that we aren't caring about (yet!)
+        const VkQueueFlags maskedFlags = (~VK_QUEUE_SPARSE_BINDING_BIT & queueFamilyProperties[i].queueFlags);
+
+        if (VK_QUEUE_GRAPHICS_BIT & maskedFlags) {
             return i;
+        }
     }
-       
+
     MsgAssert(1, 0, "Vulkan runtime error. VKERROR: Supported queue family not found.");
 
     return 0;
 }
 
-uint32_t vkTools::FindPresentFamilyIndex( const VkPhysicalDevice& gpu, const VkSurfaceKHR& surface )
+uint32_t vkTools::FindTransferFamilyIndex(const VkPhysicalDevice& gpu)
 {
-    uint32_t queue_family_count = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties( gpu, &queue_family_count, nullptr );
-    std::vector<VkQueueFamilyProperties> queue_family_properties_list( queue_family_count );
-    vkGetPhysicalDeviceQueueFamilyProperties( gpu, &queue_family_count, queue_family_properties_list.data() );
+    uint32_t queueFamilyPropertiesCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queueFamilyPropertiesCount, 0);
 
-    for ( uint32_t i = 0; i < static_cast<uint32_t>( queue_family_properties_list.size() ); ++i ) {
-        VkBool32 presentSupport = VK_FALSE;
-        vkGetPhysicalDeviceSurfaceSupportKHR( gpu, i, surface, &presentSupport );
-        if ( queue_family_properties_list[ i ].queueCount > 0 && presentSupport )
+    VkQueueFamilyProperties* const queueFamilyProperties = (VkQueueFamilyProperties*)_alloca(
+        sizeof(VkQueueFamilyProperties) * queueFamilyPropertiesCount);
+
+    vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queueFamilyPropertiesCount, queueFamilyProperties);
+
+    // first try and find a queue that has just the transfer bit set
+    for (uint32_t i = 0; i < queueFamilyPropertiesCount; i++) {
+        // mask out the sparse binding bit that we aren't caring about (yet!)
+        const VkQueueFlags maskedFlags = (~VK_QUEUE_SPARSE_BINDING_BIT & queueFamilyProperties[i].queueFlags);
+
+        if (!((VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT) & maskedFlags) &&
+            (VK_QUEUE_TRANSFER_BIT & maskedFlags)) {
             return i;
+        }
     }
-    MsgAssert(1, 0, "Vulkan runtime error. VKERROR: Memory type not found.");
+
+    // otherwise we'll prefer using a compute-only queue,
+    // remember that having compute on the queue implicitly enables transfer!
+    for (uint32_t i = 0; i < queueFamilyPropertiesCount; i++) {
+        // mask out the sparse binding bit that we aren't caring about (yet!)
+        const VkQueueFlags maskedFlags = (~VK_QUEUE_SPARSE_BINDING_BIT & queueFamilyProperties[i].queueFlags);
+
+        if (!(VK_QUEUE_GRAPHICS_BIT & maskedFlags) && (VK_QUEUE_COMPUTE_BIT & maskedFlags)) {
+            return i;
+        }
+    }
+
+    // lastly get any queue that'll work for us (graphics, compute or transfer bit set)
+    for (uint32_t i = 0; i < queueFamilyPropertiesCount; i++) {
+        // mask out the sparse binding bit that we aren't caring about (yet!)
+        const VkQueueFlags maskedFlags = (~VK_QUEUE_SPARSE_BINDING_BIT & queueFamilyProperties[i].queueFlags);
+
+        if ((VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT | VK_QUEUE_TRANSFER_BIT) & maskedFlags) {
+            return i;
+        }
+    }
+
+    MsgAssert(1, 0, "Vulkan runtime error. VKERROR: Supported queue family not found.");
 
     return 0;
 }
 
+uint32_t vkTools::FindComputeFamilyIndex(const VkPhysicalDevice& gpu)
+{
+    uint32_t queueFamilyPropertiesCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queueFamilyPropertiesCount, 0);
+
+    VkQueueFamilyProperties* const queueFamilyProperties = (VkQueueFamilyProperties*)_alloca(
+        sizeof(VkQueueFamilyProperties) * queueFamilyPropertiesCount);
+
+    vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queueFamilyPropertiesCount, queueFamilyProperties);
+
+    // first try and find a queue that has just the compute bit set
+    for (uint32_t i = 0; i < queueFamilyPropertiesCount; i++) {
+        // mask out the sparse binding bit that we aren't caring about (yet!) and the transfer bit
+        const VkQueueFlags maskedFlags = (~(VK_QUEUE_TRANSFER_BIT | VK_QUEUE_SPARSE_BINDING_BIT) &
+            queueFamilyProperties[i].queueFlags);
+
+        if (!(VK_QUEUE_GRAPHICS_BIT & maskedFlags) && (VK_QUEUE_COMPUTE_BIT & maskedFlags)) {
+            return i;
+        }
+    }
+
+    // lastly get any queue that'll work for us
+    for (uint32_t i = 0; i < queueFamilyPropertiesCount; i++) {
+        // mask out the sparse binding bit that we aren't caring about (yet!) and the transfer bit
+        const VkQueueFlags maskedFlags = (~(VK_QUEUE_TRANSFER_BIT | VK_QUEUE_SPARSE_BINDING_BIT) &
+            queueFamilyProperties[i].queueFlags);
+
+        if (VK_QUEUE_COMPUTE_BIT & maskedFlags) {
+            return i;
+        }
+    }
+
+    MsgAssert(1, 0, "Vulkan runtime error. VKERROR: Supported queue family not found.");
+
+    return 0;
+}
+
+uint32_t vkTools::FindPresentFamilyIndex(const VkPhysicalDevice& gpu, const VkSurfaceKHR& surface)
+{
+    uint32_t queue_family_count = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queue_family_count, nullptr);
+    std::vector<VkQueueFamilyProperties> queue_family_properties_list(queue_family_count);
+    vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queue_family_count, queue_family_properties_list.data());
+
+    for (uint32_t i = 0; i < static_cast<uint32_t>(queue_family_properties_list.size()); ++i) {
+        VkBool32 presentSupport = VK_FALSE;
+        vkGetPhysicalDeviceSurfaceSupportKHR(gpu, i, surface, &presentSupport);
+        if (queue_family_properties_list[i].queueCount > 0 && presentSupport)
+            return i;
+    }
+
+    MsgAssert(1, 0, "Vulkan runtime error. VKERROR: Supported queue family not found.");
+
+    return 0;
+}
 
 uint32_t vkTools::FindMemoryType( const VkPhysicalDevice& gpu, const uint32_t& type_filter, const VkMemoryPropertyFlags& memory_property_flags )
 {

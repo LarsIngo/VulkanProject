@@ -283,9 +283,14 @@ void VkRenderer::InitialiseDevice()
     // https://gist.github.com/sheredom/523f02bbad2ae397d7ed255f3f3b5a7f
     // http://www.duskborn.com/a-simple-vulkan-compute-example/
 
-    mGraphicsFamilyIndex = vkTools::FindFamilyIndex(mPhysicalDevice, VK_QUEUE_GRAPHICS_BIT);
-    mComputeFamilyIndex = vkTools::FindFamilyIndex(mPhysicalDevice, VK_QUEUE_COMPUTE_BIT);
-    mTransferFamilyIndex = vkTools::FindFamilyIndex(mPhysicalDevice, VK_QUEUE_TRANSFER_BIT);
+    //mGraphicsFamilyIndex = vkTools::FindFamilyIndex(mPhysicalDevice, VK_QUEUE_GRAPHICS_BIT);
+    //mComputeFamilyIndex = vkTools::FindFamilyIndex(mPhysicalDevice, VK_QUEUE_COMPUTE_BIT);
+    //mTransferFamilyIndex = vkTools::FindFamilyIndex(mPhysicalDevice, VK_QUEUE_TRANSFER_BIT);
+
+    mGraphicsFamilyIndex = vkTools::FindGraphicsFamilyIndex(mPhysicalDevice);
+    mComputeFamilyIndex = vkTools::FindComputeFamilyIndex(mPhysicalDevice);
+    mTransferFamilyIndex = vkTools::FindTransferFamilyIndex(mPhysicalDevice);
+
     std::cout << "Graphics familty index: " << mGraphicsFamilyIndex << std::endl;
     std::cout << "Compute familty index: " << mComputeFamilyIndex << std::endl;
     std::cout << "Transfer familty index: " << mTransferFamilyIndex << std::endl;
