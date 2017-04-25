@@ -278,15 +278,18 @@ void VkRenderer::InitialiseDevice()
 
     std::vector<const char*> enabledExtensionList = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
-    std::map<uint32_t, uint32_t> familyIndexMap;
+
+    std::vector<VkQueueFamilyProperties> queue_family_properties_list;
+    {
+        uint32_t queue_family_count = 0;
+        vkGetPhysicalDeviceQueueFamilyProperties(mPhysicalDevice, &queue_family_count, nullptr);
+        queue_family_properties_list.resize(queue_family_count);
+        vkGetPhysicalDeviceQueueFamilyProperties(mPhysicalDevice, &queue_family_count, queue_family_properties_list.data());
+    }
 
     // https://gist.github.com/sheredom/523f02bbad2ae397d7ed255f3f3b5a7f
-    // http://www.duskborn.com/a-simple-vulkan-compute-example/
 
-    //mGraphicsFamilyIndex = vkTools::FindFamilyIndex(mPhysicalDevice, VK_QUEUE_GRAPHICS_BIT);
-    //mComputeFamilyIndex = vkTools::FindFamilyIndex(mPhysicalDevice, VK_QUEUE_COMPUTE_BIT);
-    //mTransferFamilyIndex = vkTools::FindFamilyIndex(mPhysicalDevice, VK_QUEUE_TRANSFER_BIT);
-
+    vkTools::PrintFamilyIndices(mPhysicalDevice);
     mGraphicsFamilyIndex = vkTools::FindGraphicsFamilyIndex(mPhysicalDevice);
     mComputeFamilyIndex = vkTools::FindComputeFamilyIndex(mPhysicalDevice);
     mTransferFamilyIndex = vkTools::FindTransferFamilyIndex(mPhysicalDevice);
@@ -295,19 +298,26 @@ void VkRenderer::InitialiseDevice()
     std::cout << "Compute familty index: " << mComputeFamilyIndex << std::endl;
     std::cout << "Transfer familty index: " << mTransferFamilyIndex << std::endl;
 
+    std::map<uint32_t, uint32_t> familyIndexMap;
     familyIndexMap[mGraphicsFamilyIndex] = mGraphicsFamilyIndex;
     familyIndexMap[mComputeFamilyIndex] = mComputeFamilyIndex;
     familyIndexMap[mTransferFamilyIndex] = mTransferFamilyIndex;
     
     std::vector<VkDeviceQueueCreateInfo> device_queue_create_info;
+    std::map<uint32_t, std::vector<float>> queue_Priorities_map;
     for (std::size_t i = 0; i < familyIndexMap.size(); ++i)
     {
-        float queuePriorities{ 1.f };
+        uint32_t familyIndex = familyIndexMap[i];
+        uint32_t queueCount = familyIndex == 0 ? 16 : 1;
+        std::vector<float>& queue_Priorities_list = queue_Priorities_map[familyIndex];
+        for (uint32_t n = 0; n < queueCount; ++n)
+            queue_Priorities_list.push_back(1.f);
+
         VkDeviceQueueCreateInfo deviceQueueCreateInfo;
         deviceQueueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        deviceQueueCreateInfo.queueCount = 1;
-        deviceQueueCreateInfo.pQueuePriorities = &queuePriorities;
-        deviceQueueCreateInfo.queueFamilyIndex = familyIndexMap[i];
+        deviceQueueCreateInfo.queueCount = queueCount;
+        deviceQueueCreateInfo.pQueuePriorities = queue_Priorities_list.data();
+        deviceQueueCreateInfo.queueFamilyIndex = familyIndex;
         deviceQueueCreateInfo.pNext = NULL;
         deviceQueueCreateInfo.flags = 0;
         device_queue_create_info.push_back(deviceQueueCreateInfo);

@@ -370,6 +370,32 @@ uint32_t vkTools::FindComputeFamilyIndex(const VkPhysicalDevice& gpu)
     return 0;
 }
 
+void vkTools::PrintFamilyIndices(const VkPhysicalDevice& gpu)
+{
+    uint32_t queue_family_count = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queue_family_count, nullptr);
+    std::vector<VkQueueFamilyProperties> queue_family_properties_list(queue_family_count);
+    vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queue_family_count, queue_family_properties_list.data());
+
+    for (std::size_t i = 0; i < queue_family_properties_list.size(); ++i)
+    {
+        VkQueueFamilyProperties& queue_family_properties = queue_family_properties_list[i];
+        std::cout << "Family index: " << i << std::endl;
+        std::cout << "timestampValidBits: " << queue_family_properties.timestampValidBits << std::endl;
+        std::cout << "queueCount: " << queue_family_properties.queueCount << std::endl;
+        std::cout << "queueFlags: ";
+        if (queue_family_properties.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+            std::cout << "VK_QUEUE_GRAPHICS_BIT ";
+        if (queue_family_properties.queueFlags & VK_QUEUE_COMPUTE_BIT)
+            std::cout << "VK_QUEUE_COMPUTE_BIT ";
+        if (queue_family_properties.queueFlags & VK_QUEUE_TRANSFER_BIT)
+            std::cout << "VK_QUEUE_TRANSFER_BIT ";
+        if (queue_family_properties.queueFlags & VK_QUEUE_SPARSE_BINDING_BIT)
+            std::cout << "VK_QUEUE_SPARSE_BINDING_BIT ";
+        std::cout << std::endl << std::endl;
+    }
+}
+
 uint32_t vkTools::FindPresentFamilyIndex(const VkPhysicalDevice& gpu, const VkSurfaceKHR& surface)
 {
     uint32_t queue_family_count = 0;
