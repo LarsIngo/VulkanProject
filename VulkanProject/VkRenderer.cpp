@@ -306,20 +306,19 @@ void VkRenderer::InitialiseDevice()
     familyIndexMap[mComputeFamilyIndex] = mComputeFamilyIndex;
     familyIndexMap[mTransferFamilyIndex] = mTransferFamilyIndex;
 
-    std::map<uint32_t, uint32_t> familyQueueCountMap;
-    if (familyQueueCountMap.find(mGraphicsFamilyIndex) == familyQueueCountMap.end())
-        familyQueueCountMap[mGraphicsFamilyIndex] = graphicsQueueCount;
-    if (familyQueueCountMap.find(mComputeFamilyIndex) == familyQueueCountMap.end())
-        familyQueueCountMap[mComputeFamilyIndex] = computeQueueCount;
-    if (familyQueueCountMap.find(mTransferFamilyIndex) == familyQueueCountMap.end())
-        familyQueueCountMap[mTransferFamilyIndex] = transferQueueCount;
+    if (mFamilyQueueCountMap.find(mGraphicsFamilyIndex) == mFamilyQueueCountMap.end())
+        mFamilyQueueCountMap[mGraphicsFamilyIndex] = graphicsQueueCount;
+    if (mFamilyQueueCountMap.find(mComputeFamilyIndex) == mFamilyQueueCountMap.end())
+        mFamilyQueueCountMap[mComputeFamilyIndex] = computeQueueCount;
+    if (mFamilyQueueCountMap.find(mTransferFamilyIndex) == mFamilyQueueCountMap.end())
+        mFamilyQueueCountMap[mTransferFamilyIndex] = transferQueueCount;
     
     std::vector<VkDeviceQueueCreateInfo> device_queue_create_info;
     std::map<uint32_t, std::vector<float>> queue_Priorities_map;
     for (std::size_t i = 0; i < familyIndexMap.size(); ++i)
     {
         uint32_t familyIndex = familyIndexMap[i];
-        uint32_t queueCount = familyQueueCountMap[familyIndex];// familyIndex == 0 ? 16 : 1;
+        uint32_t queueCount = mFamilyQueueCountMap[familyIndex];// familyIndex == 0 ? 16 : 1;
         std::vector<float>& queue_Priorities_list = queue_Priorities_map[familyIndex];
         for (uint32_t n = 0; n < queueCount; ++n)
             queue_Priorities_list.push_back(1.f);
@@ -358,10 +357,27 @@ void VkRenderer::InitialiseQueues()
 {
     mPresentFamilyIndex = vkTools::FindPresentFamilyIndex(mPhysicalDevice, mSurfaceKHR);
 
-    vkGetDeviceQueue(mDevice, mGraphicsFamilyIndex, 0, &mGraphicsQueue);
-    vkGetDeviceQueue(mDevice, mComputeFamilyIndex, 0, &mComputeQueue);
-    vkGetDeviceQueue(mDevice, mTransferFamilyIndex, 0, &mTransferQueue);
-    vkGetDeviceQueue(mDevice, mPresentFamilyIndex, 0, &mPresentQueue);
+    std::map<uint32_t, uint32_t> queueIndexMap;
+    queueIndexMap[mPresentFamilyIndex] = 0;
+    queueIndexMap[mGraphicsFamilyIndex] = 0;
+    queueIndexMap[mComputeFamilyIndex] = 0;
+    queueIndexMap[mTransferFamilyIndex] = 0;
+
+    std::cout << std::endl;
+    std::cout << "Present queue index: " << queueIndexMap[mPresentFamilyIndex] << std::endl;
+    vkGetDeviceQueue(mDevice, mPresentFamilyIndex, queueIndexMap[mPresentFamilyIndex]++, &mPresentQueue);
+    std::cout << "Graphics queue index: " << queueIndexMap[mGraphicsFamilyIndex] << std::endl;
+    vkGetDeviceQueue(mDevice, mGraphicsFamilyIndex, queueIndexMap[mGraphicsFamilyIndex]++, &mGraphicsQueue);
+    std::cout << "Compute queue index: " << queueIndexMap[mComputeFamilyIndex] << std::endl;
+    vkGetDeviceQueue(mDevice, mComputeFamilyIndex, queueIndexMap[mComputeFamilyIndex]++, &mComputeQueue);
+    std::cout << "Transform queue index: " << queueIndexMap[mTransferFamilyIndex] << std::endl;
+    vkGetDeviceQueue(mDevice, mTransferFamilyIndex, queueIndexMap[mTransferFamilyIndex]++, &mTransferQueue);
+    std::cout << std::endl;
+
+    assert(queueIndexMap[mPresentFamilyIndex] <= mFamilyQueueCountMap[mPresentFamilyIndex]);
+    assert(queueIndexMap[mGraphicsFamilyIndex] <= mFamilyQueueCountMap[mGraphicsFamilyIndex]);
+    assert(queueIndexMap[mComputeFamilyIndex] <= mFamilyQueueCountMap[mComputeFamilyIndex]);
+    assert(queueIndexMap[mTransferFamilyIndex] <= mFamilyQueueCountMap[mTransferFamilyIndex]);
 }
 
 void VkRenderer::DeInitialiseQueues()

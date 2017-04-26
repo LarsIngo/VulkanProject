@@ -10,6 +10,7 @@
 #include <GLFW/glfw3.h>
 
 #include <vector>
+#include <map>
 #include "FrameBuffer.hpp"
 
 class VkRenderer
@@ -117,4 +118,5 @@ class VkRenderer
         unsigned int mWinHeight;
         bool mClose;
         uint32_t mActiveSwapchainImageIndex;
+        std::map<uint32_t, uint32_t> mFamilyQueueCountMap;
 };
