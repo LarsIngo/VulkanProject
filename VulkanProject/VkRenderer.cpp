@@ -297,9 +297,9 @@ void VkRenderer::InitialiseDevice()
     uint32_t transferQueueCount;
     vkTools::FindTransferFamily(mPhysicalDevice, mTransferFamilyIndex, transferQueueCount);
 
-    std::cout << "Graphics familty index: " << mGraphicsFamilyIndex << std::endl;
-    std::cout << "Compute familty index: " << mComputeFamilyIndex << std::endl;
-    std::cout << "Transfer familty index: " << mTransferFamilyIndex << std::endl;
+    std::cout << "Graphics family index: " << mGraphicsFamilyIndex << std::endl;
+    std::cout << "Compute family index: " << mComputeFamilyIndex << std::endl;
+    std::cout << "Transfer family index: " << mTransferFamilyIndex << std::endl;
 
     std::map<uint32_t, uint32_t> familyIndexMap;
     familyIndexMap[mGraphicsFamilyIndex] = mGraphicsFamilyIndex;
