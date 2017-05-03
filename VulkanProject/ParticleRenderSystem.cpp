@@ -135,9 +135,9 @@ void ParticleRenderSystem::Render(VkCommandBuffer commandBuffer, Scene* scene, C
     {   // vkUpdateDescriptorSets.
         VkDescriptorBufferInfo particleBufferInputDescriptorBufferInfo;
         VkWriteDescriptorSet particleBufferInputWriteDescriptorSet;
-        particleBufferInputDescriptorBufferInfo.buffer = scene->mParticleBuffer->GetOutputBuffer()->mBuffer;
+        particleBufferInputDescriptorBufferInfo.buffer = scene->mParticleBuffer->GetInputBuffer()->mBuffer;
         particleBufferInputDescriptorBufferInfo.offset = 0;
-        particleBufferInputDescriptorBufferInfo.range = scene->mParticleBuffer->GetOutputBuffer()->GetSize();
+        particleBufferInputDescriptorBufferInfo.range = scene->mParticleBuffer->GetInputBuffer()->GetSize();
         particleBufferInputWriteDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         particleBufferInputWriteDescriptorSet.pNext = NULL;
         particleBufferInputWriteDescriptorSet.dstSet = mPipelineDescriptorSet;
