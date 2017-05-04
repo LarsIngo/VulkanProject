@@ -118,7 +118,7 @@ int main()
 
                 if (gpuProfile) gpuGraphicsTimer.Stop(graphicsCommandBuffer);
                 vkTools::EndCommandBuffer(graphicsCommandBuffer);
-                vkTools::SubmitCommandBuffer(graphicsQueue, { graphicsCommandBuffer }, {}, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, { renderer.mComputeCompleteSemaphore });
+                vkTools::SubmitCommandBuffer(graphicsQueue, { graphicsCommandBuffer }, { renderer.mGraphicsCompleteSemaphore });
                 // --- RENDER --- //
 
                 // +++ PRESENET +++ //
