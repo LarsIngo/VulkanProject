@@ -17,14 +17,14 @@ class VkTimer {
             mReset = true;
             mDeltaTime = 0;
             mBeginTime = 0;
-            vkGetPhysicalDeviceProperties(mPhysicalDevice, &mPhysicalDeviceProperties);
 
             uint32_t queueFamilyPropertyCount;
             vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertyCount, nullptr);
             std::vector<VkQueueFamilyProperties> queueFamilyPropertyList;
             queueFamilyPropertyList.resize(queueFamilyPropertyCount);
             vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertyCount, queueFamilyPropertyList.data());
-            assert(queueFamilyPropertyList[0].timestampValidBits == 64); // Use VK_QUERY_RESULT_64_BIT
+            for(auto it : queueFamilyPropertyList)
+                assert(it.timestampValidBits == 64); // Use VK_QUERY_RESULT_64_BIT
 
             VkQueryPoolCreateInfo queryPoolCreateInfo;
             queryPoolCreateInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
@@ -93,8 +93,10 @@ class VkTimer {
 
             assert(startTime[1] == 1 && stopTime[1] == 1);
 
-            mDeltaTime = (stopTime[0] - startTime[0]) * static_cast<double>(mPhysicalDeviceProperties.limits.timestampPeriod);
-            mBeginTime = startTime[0] * static_cast<double>(mPhysicalDeviceProperties.limits.timestampPeriod);
+            VkPhysicalDeviceProperties physicalDeviceProperties;
+            vkGetPhysicalDeviceProperties(mPhysicalDevice, &physicalDeviceProperties);
+            mDeltaTime = (stopTime[0] - startTime[0]) * static_cast<double>(physicalDeviceProperties.limits.timestampPeriod);
+            mBeginTime = startTime[0] * static_cast<double>(physicalDeviceProperties.limits.timestampPeriod);
         }
 
 
@@ -117,7 +119,6 @@ class VkTimer {
     private:
         VkDevice mDevice;
         VkPhysicalDevice mPhysicalDevice;
-        VkPhysicalDeviceProperties mPhysicalDeviceProperties;
         VkQueryPool mStartQuery;
         VkQueryPool mStopQuery;
         bool mActive;
