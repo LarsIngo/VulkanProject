@@ -766,7 +766,7 @@ void vkTools::EndCommandBuffer( const VkCommandBuffer& command_buffer ) {
 }
 
 
-void vkTools::SubmitCommandBuffer(const VkQueue& queue, const std::vector<VkCommandBuffer>& command_buffer_list, const std::vector<VkSemaphore>& signal_semaphore_list, VkPipelineStageFlags wait_dst_stage_flags, const std::vector<VkSemaphore>& wait_semaphore_list ) {
+void vkTools::QueueSubmit(const VkQueue& queue, const std::vector<VkCommandBuffer>& command_buffer_list, const std::vector<VkSemaphore>& signal_semaphore_list, VkPipelineStageFlags wait_dst_stage_flags, const std::vector<VkSemaphore>& wait_semaphore_list ) {
     VkSubmitInfo submit_info;
     submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submit_info.pNext = NULL;

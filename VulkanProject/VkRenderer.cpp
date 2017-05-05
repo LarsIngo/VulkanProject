@@ -50,30 +50,20 @@ FrameBuffer* VkRenderer::SwapBackBuffer()
 
 void VkRenderer::PresentBackBuffer()
 {
-    VkSubmitInfo submitInfo;
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.pNext = NULL;
-    submitInfo.pWaitDstStageMask = 0;
-    submitInfo.commandBufferCount = 0;
-    submitInfo.waitSemaphoreCount = 0;
-    VkSemaphore signalSemaphores[] = { mGraphicsCompleteSemaphore };
-    submitInfo.pSignalSemaphores = signalSemaphores;
-    submitInfo.signalSemaphoreCount = 1;
-
-    vkTools::VkErrorCheck(vkQueueSubmit(mGraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE));
-
     VkPresentInfoKHR presentInfoKHR;
     presentInfoKHR.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     presentInfoKHR.pNext = NULL;
     presentInfoKHR.pResults = NULL;
-    VkSemaphore waitSemaphores[] = { mPresentCompleteSemaphore, mGraphicsCompleteSemaphore };
-    presentInfoKHR.pWaitSemaphores = waitSemaphores;
-    presentInfoKHR.waitSemaphoreCount = 2;
+    std::vector<VkSemaphore> waitSemaphoresList = { mPresentCompleteSemaphore };
+    presentInfoKHR.pWaitSemaphores = waitSemaphoresList.data();
+    presentInfoKHR.waitSemaphoreCount = waitSemaphoresList.size();
     VkSwapchainKHR swapchains[] = { mSwapchainKHR };
     presentInfoKHR.pSwapchains = swapchains;
     presentInfoKHR.swapchainCount = 1;
     presentInfoKHR.pImageIndices = &mActiveSwapchainImageIndex;
     vkQueuePresentKHR(mPresentQueue, &presentInfoKHR);
+
+    //vkTools::QueueSubmit(mPresentQueue, {}, {}, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, { mPresentCompleteSemaphore });
 }
 
 void VkRenderer::InitialiseGLFW()

@@ -73,7 +73,7 @@ namespace vkTools
     void BeginCommandBuffer(const VkCommandBufferUsageFlags command_buffer_useage_flags, const VkCommandBuffer& command_buffer);
     void BeginCommandBuffer(const VkCommandBufferUsageFlags command_buffer_useage_flags, const VkCommandBufferInheritanceInfo command_buffer_inheritance_info, const VkCommandBuffer& command_buffer);
     void EndCommandBuffer( const VkCommandBuffer& command_buffer );
-    void SubmitCommandBuffer(const VkQueue& queue, const std::vector<VkCommandBuffer>& command_buffer_list = {}, const std::vector<VkSemaphore>& signal_semaphore_list = {}, VkPipelineStageFlags wait_dst_stage_flags = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, const std::vector<VkSemaphore>& wait_semaphore_list = {} );
+    void QueueSubmit(const VkQueue& queue, const std::vector<VkCommandBuffer>& command_buffer_list = {}, const std::vector<VkSemaphore>& signal_semaphore_list = {}, VkPipelineStageFlags wait_dst_stage_flags = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, const std::vector<VkSemaphore>& wait_semaphore_list = {} );
     void WaitQueue(const VkQueue& queue );
     void ResetCommandBuffer( VkCommandBuffer& command_buffer );
     void FreeCommandBuffer( const VkDevice& device, const VkCommandPool& command_pool, const VkCommandBuffer& command_buffer );
