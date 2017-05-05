@@ -1,5 +1,6 @@
 #include "VkRenderer.hpp"
 #include "vkTools.hpp"
+#include "FrameBuffer.hpp"
 
 #include <assert.h>
 #include <iostream>
@@ -40,16 +41,30 @@ void VkRenderer::Close()
     mClose = true;
 }
 
-FrameBuffer* VkRenderer::SwapBackBuffer()
+void VkRenderer::Present(FrameBuffer* fb)
 {
     vkTools::VkErrorCheck(vkAcquireNextImageKHR(mDevice, mSwapchainKHR, (std::numeric_limits<uint64_t>::max)(), mPresentCompleteSemaphore, VK_NULL_HANDLE, &mActiveSwapchainImageIndex));
     assert(mActiveSwapchainImageIndex <= mSwapchainFrameBufferList.size());
+    FrameBuffer* backBuffer = mSwapchainFrameBufferList[mActiveSwapchainImageIndex];
 
-    return mSwapchainFrameBufferList[mActiveSwapchainImageIndex];
-}
+    // Reset present command buffer.
+    vkTools::WaitQueue(mPresentQueue);
+    vkTools::ResetCommandBuffer(mPresentCommandBuffer);
+    vkTools::BeginCommandBuffer(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, mPresentCommandBuffer);
 
-void VkRenderer::PresentBackBuffer()
-{
+    // Copy frame buffer to back buffer.
+    backBuffer->TransitionImageLayout(mPresentCommandBuffer, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    backBuffer->Copy(mPresentCommandBuffer, fb);
+    backBuffer->TransitionImageLayout(mPresentCommandBuffer, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+
+    // Execute present command buffer.
+    vkTools::EndCommandBuffer(mPresentCommandBuffer);
+    vkTools::QueueSubmit(mPresentQueue, { mPresentCommandBuffer }, { mCopyCompleteSemaphore });
+
+    // Wait for frame to complete.
+    vkTools::QueueSubmit(mPresentQueue, {}, {}, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, { mCopyCompleteSemaphore });
+
+    // Present to screen.
     VkPresentInfoKHR presentInfoKHR;
     presentInfoKHR.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     presentInfoKHR.pNext = NULL;
@@ -61,9 +76,8 @@ void VkRenderer::PresentBackBuffer()
     presentInfoKHR.pSwapchains = swapchains;
     presentInfoKHR.swapchainCount = 1;
     presentInfoKHR.pImageIndices = &mActiveSwapchainImageIndex;
-    vkQueuePresentKHR(mPresentQueue, &presentInfoKHR);
 
-    //vkTools::QueueSubmit(mPresentQueue, {}, {}, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, { mPresentCompleteSemaphore });
+    vkQueuePresentKHR(mPresentQueue, &presentInfoKHR);
 }
 
 void VkRenderer::InitialiseGLFW()
@@ -308,7 +322,7 @@ void VkRenderer::InitialiseDevice()
     for (std::size_t i = 0; i < familyIndexMap.size(); ++i)
     {
         uint32_t familyIndex = familyIndexMap[i];
-        uint32_t queueCount = mFamilyQueueCountMap[familyIndex];// familyIndex == 0 ? 16 : 1;
+        uint32_t queueCount = mFamilyQueueCountMap[familyIndex];
         std::vector<float>& queue_Priorities_list = queue_Priorities_map[familyIndex];
         for (uint32_t n = 0; n < queueCount; ++n)
             queue_Priorities_list.push_back(1.f);
@@ -457,6 +471,7 @@ void VkRenderer::InitialiseCommandPool()
 
     commandPoolCreateInfo.queueFamilyIndex = mGraphicsFamilyIndex;
     vkTools::VkErrorCheck(vkCreateCommandPool(mDevice, &commandPoolCreateInfo, nullptr, &mGraphicsCommandPool));
+    vkTools::CreateCommandBuffer(mDevice, mGraphicsCommandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, mPresentCommandBuffer);
 
     commandPoolCreateInfo.queueFamilyIndex = mComputeFamilyIndex;
     vkTools::VkErrorCheck(vkCreateCommandPool(mDevice, &commandPoolCreateInfo, nullptr, &mComputeCommandPool));
@@ -467,6 +482,7 @@ void VkRenderer::InitialiseCommandPool()
 
 void VkRenderer::DeInitialiseCommandPool()
 {
+    vkFreeCommandBuffers(mDevice, mGraphicsCommandPool, 1, &mPresentCommandBuffer);
     vkDestroyCommandPool(mDevice, mGraphicsCommandPool, nullptr);
     vkDestroyCommandPool(mDevice, mComputeCommandPool, nullptr);
     vkDestroyCommandPool(mDevice, mTransferCommandPool, nullptr);
@@ -474,21 +490,14 @@ void VkRenderer::DeInitialiseCommandPool()
 
 void VkRenderer::InitialiseSemaphores()
 {
-    VkSemaphoreCreateInfo semaphoreCreateInfo;
-    semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-    semaphoreCreateInfo.pNext = NULL;
-    semaphoreCreateInfo.flags = 0;
-
-    vkTools::VkErrorCheck(vkCreateSemaphore(mDevice, &semaphoreCreateInfo, nullptr, &mGraphicsCompleteSemaphore));
-    vkTools::VkErrorCheck(vkCreateSemaphore(mDevice, &semaphoreCreateInfo, nullptr, &mComputeCompleteSemaphore));
-    vkTools::VkErrorCheck(vkCreateSemaphore(mDevice, &semaphoreCreateInfo, nullptr, &mPresentCompleteSemaphore));
+    vkTools::CreateVkSemaphore(mDevice, mPresentCompleteSemaphore);
+    vkTools::CreateVkSemaphore(mDevice, mCopyCompleteSemaphore);
 }
 
 void VkRenderer::DeInitialiseSemaphores()
 {
-    vkDestroySemaphore(mDevice, mGraphicsCompleteSemaphore, nullptr);
-    vkDestroySemaphore(mDevice, mComputeCompleteSemaphore, nullptr);
     vkDestroySemaphore(mDevice, mPresentCompleteSemaphore, nullptr);
+    vkDestroySemaphore(mDevice, mCopyCompleteSemaphore, nullptr);
 }
 
 void VkRenderer::InitialiseSwapchanFrameBuffers()

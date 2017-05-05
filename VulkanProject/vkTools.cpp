@@ -729,6 +729,15 @@ void vkTools::EndSingleTimeCommand( const VkDevice& device, const VkCommandPool&
     vkFreeCommandBuffers( device, command_pool, 1, &command_buffer );
 }
 
+void vkTools::CreateVkSemaphore(const VkDevice& device, VkSemaphore& semaphore)
+{
+    VkSemaphoreCreateInfo semaphore_create_info;
+    semaphore_create_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+    semaphore_create_info.pNext = NULL;
+    semaphore_create_info.flags = 0;
+
+    vkTools::VkErrorCheck(vkCreateSemaphore(device, &semaphore_create_info, nullptr, &semaphore));
+}
 
 void vkTools::CreateCommandBuffer(const VkDevice& device, const VkCommandPool& command_pool, const VkCommandBufferLevel command_buffer_level, VkCommandBuffer& command_buffer)
 {

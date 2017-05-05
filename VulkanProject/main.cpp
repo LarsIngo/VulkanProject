@@ -7,11 +7,14 @@
 #include "VkTimer.hpp"
 #include "InputManager.hpp"
 #include "Camera.hpp"
+#include "FrameBuffer.hpp"
 #include "vkTools.hpp"
 #include "ParticleRenderSystem.hpp"
 #include "ParticleUpdateSystem.hpp"
 #include "Scene.hpp"
 #include "Profiler.hpp"
+
+#define SKIP_TIME 5.f
 
 int main()
 {
@@ -26,13 +29,17 @@ int main()
     VkCommandPool graphicsCommandPool = renderer.mGraphicsCommandPool;
     VkCommandPool computeCommandPool = renderer.mComputeCommandPool;
     VkQueue graphicsQueue = renderer.mGraphicsQueue;
-
     VkQueue computeQueue = renderer.mComputeQueue;
-    VkRenderPass renderPass = renderer.mRenderPass;
+    VkSemaphore graphicsCompleteSemaphore, computeCompleteSemaphore;
+    vkTools::CreateVkSemaphore(device, graphicsCompleteSemaphore);
+    vkTools::CreateVkSemaphore(device, computeCompleteSemaphore);
+
     VkCommandBuffer graphicsCommandBuffer;
     vkTools::CreateCommandBuffer(device, graphicsCommandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, graphicsCommandBuffer);
     VkCommandBuffer computeCommandBuffer;
     vkTools::CreateCommandBuffer(device, computeCommandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, computeCommandBuffer);
+
+    VkRenderPass renderPass = renderer.mRenderPass;
 
     VkCommandBuffer transferCommandBuffer = vkTools::BeginSingleTimeCommand(device, renderer.mTransferCommandPool);
 
@@ -74,6 +81,11 @@ int main()
     {
         float dt = 0.f;
         float totalTime = 0.f;
+        float skipTime = -SKIP_TIME;
+        std::cout << "+++ Skip time: " << SKIP_TIME << " seconds. (Wait for program to stabilize) +++" << std::endl;
+        std::cout << "Hold F1 to sync compute/graphics. " << std::endl;
+        std::cout << "Hold F2 to profile. " << std::endl;
+        std::cout << "Hold F3 to show average frame time. " << std::endl;
         unsigned int frameCount = 0;
         VkTimer gpuComputeTimer(device, physicalDevice);
         VkTimer gpuGraphicsTimer(device, physicalDevice);
@@ -97,57 +109,64 @@ int main()
 
                 if (gpuProfile) gpuComputeTimer.Stop(computeCommandBuffer);
                 vkTools::EndCommandBuffer(computeCommandBuffer);
-                vkTools::QueueSubmit(computeQueue, { computeCommandBuffer }, { renderer.mComputeCompleteSemaphore });
+                vkTools::QueueSubmit(computeQueue, { computeCommandBuffer }, { computeCompleteSemaphore });
                 // SYNC_COMPUTE_GRAPHICS
                 if (syncComputeGraphics) vkTools::WaitQueue(computeQueue);
                 // --- UPDATE --- //
 
                 // +++ RENDER +++ //
-                FrameBuffer* backBuffer = renderer.SwapBackBuffer();
-
                 vkTools::WaitQueue(graphicsQueue);
                 vkTools::ResetCommandBuffer(graphicsCommandBuffer);
                 vkTools::BeginCommandBuffer(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, graphicsCommandBuffer);
                 if (gpuProfile) gpuGraphicsTimer.Start(graphicsCommandBuffer);
 
-                backBuffer->TransitionImageLayout(graphicsCommandBuffer, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
                 camera.mpFrameBuffer->Clear(graphicsCommandBuffer, 0.2f, 0.2f, 0.2f);
                 particleRenderSystem.Render(graphicsCommandBuffer, &scene, &camera);
-                backBuffer->Copy(graphicsCommandBuffer, camera.mpFrameBuffer);
-                backBuffer->TransitionImageLayout(graphicsCommandBuffer, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
                 if (gpuProfile) gpuGraphicsTimer.Stop(graphicsCommandBuffer);
                 vkTools::EndCommandBuffer(graphicsCommandBuffer);
-                vkTools::QueueSubmit(graphicsQueue, { graphicsCommandBuffer }, { renderer.mGraphicsCompleteSemaphore });
+                vkTools::QueueSubmit(graphicsQueue, { graphicsCommandBuffer }, { graphicsCompleteSemaphore });
                 // --- RENDER --- //
 
                 // +++ PRESENET +++ //
                 // Wait for frame to complete.
-                vkTools::QueueSubmit(graphicsQueue, {}, {}, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, { renderer.mComputeCompleteSemaphore, renderer.mGraphicsCompleteSemaphore });
+                vkTools::QueueSubmit(graphicsQueue, {}, {}, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, { computeCompleteSemaphore, graphicsCompleteSemaphore });
 
                 // Present frame.
-                renderer.PresentBackBuffer();
+                renderer.Present(camera.mpFrameBuffer);
                 // --- PRESENET --- //
             }
+
             // +++ PROFILING +++ //
-            ++frameCount;
-            totalTime += dt;
-            if (gpuProfile)
+            skipTime += dt;
+            if (skipTime > 0.f)
             {
-                float computeTime = 1.f / 1000000.f * gpuComputeTimer.GetDeltaTime();
-                float graphicsTime = 1.f / 1000000.f * gpuGraphicsTimer.GetDeltaTime();
-                std::cout << "GPU(Total) : " << computeTime + graphicsTime << " ms | GPU(Compute): " << computeTime << " ms | GPU(Graphics) : " << graphicsTime << " ms" << std::endl;
-                profiler.Rectangle(gpuComputeTimer.GetBeginTime(), 1, gpuComputeTimer.GetDeltaTime(), 1, 0.f, 0.f, 1.f);
-                profiler.Rectangle(gpuGraphicsTimer.GetBeginTime(), 0, gpuGraphicsTimer.GetDeltaTime(), 1, 0.f, 1.f, 0.f);
-                profiler.Point(gpuGraphicsTimer.GetBeginTime(), totalTime / frameCount * 1000000, syncComputeGraphics ? "'-ro'" : "'-bo'");
-                VkCommandBuffer resetTimerCommandBuffer = vkTools::BeginSingleTimeCommand(device, renderer.mGraphicsCommandPool);
-                gpuComputeTimer.Reset(resetTimerCommandBuffer);
-                gpuGraphicsTimer.Reset(resetTimerCommandBuffer);
-                vkTools::EndSingleTimeCommand(device, renderer.mGraphicsCommandPool, renderer.mGraphicsQueue, resetTimerCommandBuffer);
-            }
-            if (inputManager.KeyPressed(GLFW_KEY_F3))
-            {
-                std::cout << "CPU(Average delta time) : " << totalTime / frameCount * 1000.f << " ms" << std::endl;
+                if (frameCount == 0)
+                    std::cout << "--- Skip time over --- " << std::endl << std::endl;
+
+                totalTime += dt;
+                ++frameCount;
+
+                if (gpuProfile)
+                {
+                    vkTools::WaitQueue(graphicsQueue);
+                    vkTools::WaitQueue(computeQueue);
+
+                    float computeTime = 1.f / 1000000.f * gpuComputeTimer.GetDeltaTime();
+                    float graphicsTime = 1.f / 1000000.f * gpuGraphicsTimer.GetDeltaTime();
+                    std::cout << "GPU(Total) : " << computeTime + graphicsTime << " ms | GPU(Compute): " << computeTime << " ms | GPU(Graphics) : " << graphicsTime << " ms" << std::endl;
+                    profiler.Rectangle(gpuComputeTimer.GetBeginTime(), 1, gpuComputeTimer.GetDeltaTime(), 1, 0.f, 0.f, 1.f);
+                    profiler.Rectangle(gpuGraphicsTimer.GetBeginTime(), 0, gpuGraphicsTimer.GetDeltaTime(), 1, 0.f, 1.f, 0.f);
+                    profiler.Point(gpuGraphicsTimer.GetBeginTime(), totalTime / frameCount * 1000000, syncComputeGraphics ? "'-ro'" : "'-bo'");
+                    VkCommandBuffer resetTimerCommandBuffer = vkTools::BeginSingleTimeCommand(device, renderer.mGraphicsCommandPool);
+                    gpuComputeTimer.Reset(resetTimerCommandBuffer);
+                    gpuGraphicsTimer.Reset(resetTimerCommandBuffer);
+                    vkTools::EndSingleTimeCommand(device, renderer.mGraphicsCommandPool, renderer.mGraphicsQueue, resetTimerCommandBuffer);
+                }
+                if (inputManager.KeyPressed(GLFW_KEY_F3))
+                {
+                    std::cout << "CPU(Average delta time) : " << totalTime / frameCount * 1000.f << " ms" << std::endl;
+                }
             }
             // --- PROFILING --- //
         }
@@ -155,10 +174,13 @@ int main()
     // --- MAIN LOOP --- //
 
     // +++ SHUTDOWN +++ //
+    vkTools::WaitQueue(renderer.mPresentQueue);
     vkTools::WaitQueue(graphicsQueue);
     vkTools::WaitQueue(computeQueue);
     vkTools::FreeCommandBuffer(device, graphicsCommandPool, graphicsCommandBuffer);
     vkTools::FreeCommandBuffer(device, computeCommandPool, computeCommandBuffer);
+    vkDestroySemaphore(device, graphicsCompleteSemaphore, nullptr);
+    vkDestroySemaphore(device, computeCompleteSemaphore, nullptr);
     // --- SHUTDOWN --- //
 
     return 0;

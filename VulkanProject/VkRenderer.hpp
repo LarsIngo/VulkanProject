@@ -11,7 +11,7 @@
 
 #include <vector>
 #include <map>
-#include "FrameBuffer.hpp"
+class FrameBuffer;
 
 class VkRenderer
 {
@@ -30,12 +30,8 @@ class VkRenderer
         // Close window.
         void Close();
 
-        // Swap back buffer.
-        // Returns next active frame buffer to present to window.
-        FrameBuffer* SwapBackBuffer();
-
-        // Present active back buffer.
-        void PresentBackBuffer();
+        // Present frame buffer to screen.
+        void Present(FrameBuffer* fb);
 
         // GLFW window.
         GLFWwindow* mGLFWwindow;
@@ -49,6 +45,8 @@ class VkRenderer
 
         uint32_t mPresentFamilyIndex;
         VkQueue mPresentQueue;
+        VkCommandPool mPresentCommandPool;
+        VkCommandBuffer mPresentCommandBuffer;
 
         uint32_t mGraphicsFamilyIndex;
         VkCommandPool mGraphicsCommandPool;
@@ -70,8 +68,7 @@ class VkRenderer
         VkSwapchainKHR mSwapchainKHR;
         std::vector<FrameBuffer*> mSwapchainFrameBufferList;
 
-        VkSemaphore mGraphicsCompleteSemaphore;
-        VkSemaphore mComputeCompleteSemaphore;
+        VkSemaphore mCopyCompleteSemaphore;
         VkSemaphore mPresentCompleteSemaphore;
 
         VkRenderPass mRenderPass;
