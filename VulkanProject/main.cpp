@@ -102,12 +102,12 @@ int main()
                 vkTools::WaitQueue(computeQueue);
                 vkTools::ResetCommandBuffer(computeCommandBuffer);
                 vkTools::BeginCommandBuffer(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, computeCommandBuffer);
-                if (gpuProfile) gpuComputeTimer.Start(computeCommandBuffer);
+                if (gpuProfile && skipTime > 0.f) gpuComputeTimer.Start(computeCommandBuffer);
 
                 camera.Update(20.f, 2.f, dt, &inputManager);
                 particleUpdateSystem.Update(computeCommandBuffer, &scene, dt);
 
-                if (gpuProfile) gpuComputeTimer.Stop(computeCommandBuffer);
+                if (gpuProfile&& skipTime > 0.f) gpuComputeTimer.Stop(computeCommandBuffer);
                 vkTools::EndCommandBuffer(computeCommandBuffer);
                 vkTools::QueueSubmit(computeQueue, { computeCommandBuffer }, { computeCompleteSemaphore });
                 // SYNC_COMPUTE_GRAPHICS
@@ -118,12 +118,12 @@ int main()
                 vkTools::WaitQueue(graphicsQueue);
                 vkTools::ResetCommandBuffer(graphicsCommandBuffer);
                 vkTools::BeginCommandBuffer(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, graphicsCommandBuffer);
-                if (gpuProfile) gpuGraphicsTimer.Start(graphicsCommandBuffer);
+                if (gpuProfile&& skipTime > 0.f) gpuGraphicsTimer.Start(graphicsCommandBuffer);
 
                 camera.mpFrameBuffer->Clear(graphicsCommandBuffer, 0.2f, 0.2f, 0.2f);
                 particleRenderSystem.Render(graphicsCommandBuffer, &scene, &camera);
 
-                if (gpuProfile) gpuGraphicsTimer.Stop(graphicsCommandBuffer);
+                if (gpuProfile&& skipTime > 0.f) gpuGraphicsTimer.Stop(graphicsCommandBuffer);
                 vkTools::EndCommandBuffer(graphicsCommandBuffer);
                 vkTools::QueueSubmit(graphicsQueue, { graphicsCommandBuffer }, { graphicsCompleteSemaphore });
                 // --- RENDER --- //
