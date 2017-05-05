@@ -13,6 +13,8 @@
 #include "Scene.hpp"
 #include "Profiler.hpp"
 
+#define SKIP_TIME 5.f
+
 int main()
 {
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
@@ -74,6 +76,11 @@ int main()
     {
         float dt = 0.f;
         float totalTime = 0.f;
+        float skipTime = -SKIP_TIME;
+        std::cout << "+++ Skip time: " << SKIP_TIME << " seconds. (Wait for program to stabilize) +++" << std::endl;
+        std::cout << "Hold F1 to sync compute/graphics. " << std::endl;
+        std::cout << "Hold F2 to profile. " << std::endl;
+        std::cout << "Hold F3 to show average frame time. " << std::endl;
         unsigned int frameCount = 0;
         VkTimer gpuComputeTimer(device, physicalDevice);
         VkTimer gpuGraphicsTimer(device, physicalDevice);
@@ -128,24 +135,31 @@ int main()
                 // --- PRESENET --- //
             }
             // +++ PROFILING +++ //
-            ++frameCount;
-            totalTime += dt;
-            if (gpuProfile)
+            skipTime += dt;
+            if (skipTime > 0.f)
             {
-                float computeTime = 1.f / 1000000.f * gpuComputeTimer.GetDeltaTime();
-                float graphicsTime = 1.f / 1000000.f * gpuGraphicsTimer.GetDeltaTime();
-                std::cout << "GPU(Total) : " << computeTime + graphicsTime << " ms | GPU(Compute): " << computeTime << " ms | GPU(Graphics) : " << graphicsTime << " ms" << std::endl;
-                profiler.Rectangle(gpuComputeTimer.GetBeginTime(), 1, gpuComputeTimer.GetDeltaTime(), 1, 0.f, 0.f, 1.f);
-                profiler.Rectangle(gpuGraphicsTimer.GetBeginTime(), 0, gpuGraphicsTimer.GetDeltaTime(), 1, 0.f, 1.f, 0.f);
-                profiler.Point(gpuGraphicsTimer.GetBeginTime(), totalTime / frameCount * 1000000, syncComputeGraphics ? "'-ro'" : "'-bo'");
-                VkCommandBuffer resetTimerCommandBuffer = vkTools::BeginSingleTimeCommand(device, renderer.mGraphicsCommandPool);
-                gpuComputeTimer.Reset(resetTimerCommandBuffer);
-                gpuGraphicsTimer.Reset(resetTimerCommandBuffer);
-                vkTools::EndSingleTimeCommand(device, renderer.mGraphicsCommandPool, renderer.mGraphicsQueue, resetTimerCommandBuffer);
-            }
-            if (inputManager.KeyPressed(GLFW_KEY_F3))
-            {
-                std::cout << "CPU(Average delta time) : " << totalTime / frameCount * 1000.f << " ms" << std::endl;
+                if (frameCount == 0)
+                    std::cout << "--- Skip time over --- " << std::endl << std::endl;
+
+                ++frameCount;
+                totalTime += dt;
+                if (gpuProfile)
+                {
+                    float computeTime = 1.f / 1000000.f * gpuComputeTimer.GetDeltaTime();
+                    float graphicsTime = 1.f / 1000000.f * gpuGraphicsTimer.GetDeltaTime();
+                    std::cout << "GPU(Total) : " << computeTime + graphicsTime << " ms | GPU(Compute): " << computeTime << " ms | GPU(Graphics) : " << graphicsTime << " ms" << std::endl;
+                    profiler.Rectangle(gpuComputeTimer.GetBeginTime(), 1, gpuComputeTimer.GetDeltaTime(), 1, 0.f, 0.f, 1.f);
+                    profiler.Rectangle(gpuGraphicsTimer.GetBeginTime(), 0, gpuGraphicsTimer.GetDeltaTime(), 1, 0.f, 1.f, 0.f);
+                    profiler.Point(gpuGraphicsTimer.GetBeginTime(), totalTime / frameCount * 1000000, syncComputeGraphics ? "'-ro'" : "'-bo'");
+                    VkCommandBuffer resetTimerCommandBuffer = vkTools::BeginSingleTimeCommand(device, renderer.mGraphicsCommandPool);
+                    gpuComputeTimer.Reset(resetTimerCommandBuffer);
+                    gpuGraphicsTimer.Reset(resetTimerCommandBuffer);
+                    vkTools::EndSingleTimeCommand(device, renderer.mGraphicsCommandPool, renderer.mGraphicsQueue, resetTimerCommandBuffer);
+                }
+                if (inputManager.KeyPressed(GLFW_KEY_F3))
+                {
+                    std::cout << "CPU(Average delta time) : " << totalTime / frameCount * 1000.f << " ms" << std::endl;
+                }
             }
             // --- PROFILING --- //
         }
