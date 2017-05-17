@@ -128,14 +128,18 @@ int main()
                 vkTools::QueueSubmit(graphicsQueue, { graphicsCommandBuffer }, { graphicsCompleteSemaphore });
                 // --- RENDER --- //
 
-                // +++ PRESENET +++ //
-                // Wait for frame to complete.
-                vkTools::QueueSubmit(graphicsQueue, {}, {}, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, { computeCompleteSemaphore, graphicsCompleteSemaphore });
-
-                // Present frame.
-                renderer.Present(camera.mpFrameBuffer);
-                // --- PRESENET --- //
+                // Wait to get CPU time.
+                vkTools::WaitQueue(computeQueue);
+                vkTools::WaitQueue(graphicsQueue);
             }
+
+            // +++ PRESENET +++ //
+            // Wait for frame to complete.
+            vkTools::QueueSubmit(graphicsQueue, {}, {}, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, { computeCompleteSemaphore, graphicsCompleteSemaphore });
+
+            // Present frame.
+            renderer.Present(camera.mpFrameBuffer);
+            // --- PRESENET --- //
 
             // +++ PROFILING +++ //
             skipTime += dt;
