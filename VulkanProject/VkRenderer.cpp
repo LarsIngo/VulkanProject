@@ -48,7 +48,6 @@ void VkRenderer::Present(FrameBuffer* fb)
     FrameBuffer* backBuffer = mSwapchainFrameBufferList[mActiveSwapchainImageIndex];
 
     // Reset present command buffer.
-    vkTools::WaitQueue(mPresentQueue);
     vkTools::ResetCommandBuffer(mPresentCommandBuffer);
     vkTools::BeginCommandBuffer(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, mPresentCommandBuffer);
 
@@ -64,6 +63,8 @@ void VkRenderer::Present(FrameBuffer* fb)
     // Wait for frame to complete.
     vkTools::QueueSubmit(mPresentQueue, {}, {}, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, { mCopyCompleteSemaphore });
 
+    vkTools::WaitQueue(mPresentQueue);
+
     // Present to screen.
     VkPresentInfoKHR presentInfoKHR;
     presentInfoKHR.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -78,6 +79,8 @@ void VkRenderer::Present(FrameBuffer* fb)
     presentInfoKHR.pImageIndices = &mActiveSwapchainImageIndex;
 
     vkQueuePresentKHR(mPresentQueue, &presentInfoKHR);
+
+    vkTools::WaitQueue(mPresentQueue);
 }
 
 void VkRenderer::InitialiseGLFW()

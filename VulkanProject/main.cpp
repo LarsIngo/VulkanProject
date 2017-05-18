@@ -52,7 +52,6 @@ int main()
 
     FrameBuffer frameBuffer(device, physicalDevice, width, height, renderer.mSurfaceFormatKHR.format, renderPass);
     Camera camera(60.f, &frameBuffer);
-    camera.mPosition.z = -5.f;
 
     int lenX = 256;
     int lenY = 256;
@@ -60,14 +59,14 @@ int main()
     {
         std::vector<Particle> particleList;
         Particle particle;
-        float spaceing = 1.f;
+        float spacing = 1.f;
         float speed = 0.1f;
-        particle.scale = glm::vec4(spaceing / 2.f, spaceing / 2.f, 0.f, 0.f);
+        particle.scale = glm::vec4(spacing * 0.75f, spacing * 0.75f, 0.f, 0.f);
         for (int y = 0; y < lenY; ++y)
         {
             for (int x = 0; x < lenX; ++x)
             {
-                particle.position = glm::vec4(x * spaceing, y * spaceing, 0.f, 0.f);
+                particle.position = glm::vec4(x * spacing, y * spacing, 0.f, 0.f);
                 //particle.velocity = -glm::normalize(particle.position + glm::vec4(speed, speed, 0.f, 0.f));
                 particle.velocity = glm::vec4(0.f, 0.f, 0.f, 0.f);
                 particle.color = glm::vec4((float)y / lenY, 0.7f, 1.f - (float)x / lenX, 1.f);
@@ -75,6 +74,10 @@ int main()
             }
         }
         scene.AddParticles(transferCommandBuffer, particleList);
+
+        camera.mPosition.x = lenX / 2.f * spacing;
+        camera.mPosition.y = lenY / 2.f * spacing;
+        camera.mPosition.z = -50.f;
     }
     vkTools::EndSingleTimeCommand(device, renderer.mTransferCommandPool, renderer.mTransferQueue, transferCommandBuffer);
     // --- INIT --- //
@@ -108,7 +111,7 @@ int main()
             {
                 double lastTime = currentTime;
                 currentTime = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-                dt = currentTime - lastTime;
+                dt = (currentTime - lastTime) / 1000000000;
                 totalTime = currentTime - startTime;
 
                 CPUTIMER(mt);
