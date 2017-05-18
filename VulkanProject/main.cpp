@@ -32,9 +32,9 @@ int main()
     VkCommandPool computeCommandPool = renderer.mComputeCommandPool;
     VkQueue graphicsQueue = renderer.mGraphicsQueue;
     VkQueue computeQueue = renderer.mComputeQueue;
-    VkSemaphore graphicsCompleteSemaphore, computeCompleteSemaphore;
-    vkTools::CreateVkSemaphore(device, graphicsCompleteSemaphore);
-    vkTools::CreateVkSemaphore(device, computeCompleteSemaphore);
+    //VkSemaphore graphicsCompleteSemaphore, computeCompleteSemaphore;
+    //vkTools::CreateVkSemaphore(device, graphicsCompleteSemaphore);
+    //vkTools::CreateVkSemaphore(device, computeCompleteSemaphore);
 
     VkCommandBuffer graphicsCommandBuffer;
     vkTools::CreateCommandBuffer(device, graphicsCommandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, graphicsCommandBuffer);
@@ -124,7 +124,8 @@ int main()
 
                 if (totalTime > SKIP_TIME_NANO) gpuComputeTimer.Stop(computeCommandBuffer);
                 vkTools::EndCommandBuffer(computeCommandBuffer);
-                vkTools::QueueSubmit(computeQueue, { computeCommandBuffer }, { computeCompleteSemaphore });
+                //vkTools::QueueSubmit(computeQueue, { computeCommandBuffer }, { computeCompleteSemaphore });
+                vkTools::QueueSubmit(computeQueue, { computeCommandBuffer });
                 // SYNC_COMPUTE_GRAPHICS
                 if (syncComputeGraphics) vkTools::WaitQueue(computeQueue);
                 // --- UPDATE --- //
@@ -140,7 +141,8 @@ int main()
 
                 if (totalTime > SKIP_TIME_NANO) gpuGraphicsTimer.Stop(graphicsCommandBuffer);
                 vkTools::EndCommandBuffer(graphicsCommandBuffer);
-                vkTools::QueueSubmit(graphicsQueue, { graphicsCommandBuffer }, { graphicsCompleteSemaphore });
+                //vkTools::QueueSubmit(graphicsQueue, { graphicsCommandBuffer }, { graphicsCompleteSemaphore });
+                vkTools::QueueSubmit(graphicsQueue, { graphicsCommandBuffer });
                 // --- RENDER --- //
 
                 // Wait on CPU for compute and graphics to complete.
@@ -150,7 +152,7 @@ int main()
 
             // +++ PRESENET +++ //
             // Wait for frame to complete.
-            vkTools::QueueSubmit(graphicsQueue, {}, {}, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, { computeCompleteSemaphore, graphicsCompleteSemaphore });
+            //vkTools::QueueSubmit(graphicsQueue, {}, {}, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, { computeCompleteSemaphore, graphicsCompleteSemaphore });
 
             // Present frame.
             renderer.Present(camera.mpFrameBuffer);
@@ -201,8 +203,8 @@ int main()
     vkTools::WaitQueue(computeQueue);
     vkTools::FreeCommandBuffer(device, graphicsCommandPool, graphicsCommandBuffer);
     vkTools::FreeCommandBuffer(device, computeCommandPool, computeCommandBuffer);
-    vkDestroySemaphore(device, graphicsCompleteSemaphore, nullptr);
-    vkDestroySemaphore(device, computeCompleteSemaphore, nullptr);
+    //vkDestroySemaphore(device, graphicsCompleteSemaphore, nullptr);
+    //vkDestroySemaphore(device, computeCompleteSemaphore, nullptr);
     // --- SHUTDOWN --- //
 
     return 0;
