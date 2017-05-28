@@ -1,6 +1,6 @@
 #version 450
 
-#define ITER 50000.f
+#define ITER 3000000.f
 
 layout(early_fragment_tests) in;
 

@@ -53,8 +53,8 @@ int main()
     FrameBuffer frameBuffer(device, physicalDevice, width, height, renderer.mSurfaceFormatKHR.format, renderPass);
     Camera camera(60.f, &frameBuffer);
 
-    int lenX = 256;
-    int lenY = 256;
+    int lenX = 1;
+    int lenY = 1;
     Scene scene(device, physicalDevice, lenX * lenY);
     {
         std::vector<Particle> particleList;
@@ -75,8 +75,8 @@ int main()
         }
         scene.AddParticles(transferCommandBuffer, particleList);
 
-        camera.mPosition.x = lenX / 2.f * spacing;
-        camera.mPosition.y = lenY / 2.f * spacing;
+        camera.mPosition.x = (lenX - 1) / 2.f * spacing;
+        camera.mPosition.y = (lenY - 1) / 2.f * spacing;
         camera.mPosition.z = -50.f;
     }
     vkTools::EndSingleTimeCommand(device, renderer.mTransferCommandPool, renderer.mTransferQueue, transferCommandBuffer);
